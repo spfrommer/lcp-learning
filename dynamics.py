@@ -1,37 +1,58 @@
 import sys
 import math
 import numpy as np
+from argparse import ArgumentParser
 from collections import namedtuple
+from enum import Enum
 import pdb
 
 import lemkelcp as lcp
 
 # x corresponds to height
 FallingSimParams = namedtuple('falling_params', 'g x0 xdot0 lambda0 dt time_steps')
+FallingSimSolution = namedtuple('falling_solution', 'xs, xdots, lambdas')
 # x corresponds to sliding velocity, u external force
-SlidingSimParams = namedtuple('sliding_params', 'g x0 xdot0 mu dt u time_steps')
+SlidingSimParams = namedtuple('sliding_params', 'g x0 xdot0 mu dt us time_steps')
+# Outputs slack variables (lambdas are "slack" force differences from max)
+SlidingSimSolution = namedtuple('sliding_solution', 'xs, posxdots, negxdots, poslambdas, neglambdas')
+# xdots and lambdas are signed and lambdas represent actual friction forces
+SlidingSimSolutionProcessed = namedtuple('sliding_solution_processed', 'xs, xdots, lambdas')
+
+class SimType(Enum):
+    FALLING = 'falling'
+    SLIDING = 'sliding'
+
+    def __str__(self):
+        return self.value
 
 def main():
-    if sys.argv[1] == "falling":
+    parser = ArgumentParser()
+    parser.add_argument('simtype', type=SimType, choices=list(SimType))
+    opts = parser.parse_args()
+
+    if opts.simtype == SimType.FALLING:
         print('Solving falling sim...')
         p = FallingSimParams(x0=20.0,  xdot0=4.0,  lambda0=0.0,
                       g=1.0,    dt=1.0,     time_steps=30)
-        xs, xdots, lambdas = falling_box_sim(p)
+        sol = falling_box_sim(p)
         print('x, xdot, lambda')
-        print(np.hstack((xs, xdots, lambdas)))
+        print(np.hstack((sol.xs, sol.xdots, sol.lambdas)))
 
-    if sys.argv[1] == "sliding":
+    if opts.simtype == SimType.SLIDING:
         print('Solving sliding sim...')
-        p = SlidingSimParams(x0=0.0,  xdot0=1.0,  mu=0.0,
+        p = SlidingSimParams(x0=0.0,  xdot0=0,  mu=1.0,
                       g=1.0,   dt=1.0,     time_steps=30,
-                      u = np.ones(30) * 0)
-        xs, posxdots, negxdots, poslambdas, neglambdas = sliding_box_sim(p)
+                      us = (2) * np.ones(30))
+        sol = sliding_box_sim(p)
         print('Full output: ')
         print('x, xdot+, xdot-, lambda+, lambda-')
-        print(np.hstack((xs, posxdots, negxdots, poslambdas, neglambdas)))
-        print('Summed output: ')
+        print(np.hstack((sol.xs, sol.posxdots, sol.negxdots,
+                         sol.poslambdas, sol.neglambdas)))
+        sol_processed = process_sliding_solution(sol, p)
+        print('Processed output: ')
         print('x, xdot, lambda')
-        print(np.hstack((xs, posxdots - negxdots, poslambdas - neglambdas)))
+        print(np.hstack((sol_processed.xs, sol_processed.xdots,
+                         sol_processed.lambdas)))
 
 # Takes in parameters as a FallingSimParams
 def falling_box_sim(p):
@@ -57,8 +78,8 @@ def falling_box_sim(p):
             lambdas[t+1] = M[0,0] * xsol + q[0]
             
         xdots[t+1] = xdots[t] + (-p.g + lambdas[t+1]) * p.dt
-
-    return xs, xdots, lambdas
+    
+    return FallingSimSolution(xs, xdots, lambdas)
 
 # Takes in parameters as a SlidingSimParams
 def sliding_box_sim(p):
@@ -76,9 +97,9 @@ def sliding_box_sim(p):
     neglambdas[0] = p.mu * p.g
 
     for t in range(p.time_steps-1):
-        M = (1/p.dt) * np.array([[0,1],[1,0]])
-        q = np.array([(1/p.dt) * posxdots[t] - (1/p.dt) * negxdots[t] + p.u[t+1] + p.mu * p.g,
-                      (1/p.dt) * negxdots[t] - (1/p.dt) * posxdots[t] - p.u[t+1] + p.mu * p.g])
+        M = (1/p.dt) * np.eye(2)
+        q = np.array([(1/p.dt) * negxdots[t] - (1/p.dt) * posxdots[t] - p.us[t+1] + p.mu * p.g,
+                      (1/p.dt) * posxdots[t] - (1/p.dt) * negxdots[t] + p.us[t+1] + p.mu * p.g])
         xdotsol, exit_code, _ = lcp.lemkelcp(M, q)
         assert(exit_code == 0)
         
@@ -89,10 +110,33 @@ def sliding_box_sim(p):
         # Solver doesn't output slack variable
         # So we calculate it explicitely
         if np.isclose(xdotsol[0], 0):
-            poslambdas[t+1] = np.dot(M[0,:], xdotsol) + q[0]
+            poslambdas[t+1] = np.dot(M[1,:], xdotsol) + q[1]
         if np.isclose(xdotsol[1], 0):
-            neglambdas[t+1] = np.dot(M[1,:], xdotsol) + q[1]
+            neglambdas[t+1] = np.dot(M[0,:], xdotsol) + q[0]
 
-    return xs, posxdots, negxdots, poslambdas, neglambdas
+    return SlidingSimSolution(xs, posxdots, negxdots, poslambdas, neglambdas)
+
+def process_sliding_solution(sol, params):
+    xdots = sol.posxdots - sol.negxdots;
+    # Pos/neg friction forces (solution lambdas are actually slack forces)
+    lambdaforces = params.mu * params.g - np.hstack((sol.poslambdas, sol.neglambdas));
+    lambdas = np.zeros(xdots.shape)
+    for i in range(np.size(xdots)):
+        xdot = xdots[i]
+        
+        if np.isclose(xdot, 0):
+            # If stationary, take the larger static friction force
+            # Other will be negative
+            if lambdaforces[i, 0] > lambdaforces[i, 1]:
+                lambdas[i] = lambdaforces[i, 0]
+            else:
+                lambdas[i] = -lambdaforces[i, 1]
+        else:
+            # If box moving, take friction force in opposite dir
+            # Should be just max friction force
+            dir = np.sign(xdot)
+            lambdas[i] = (-dir) * lambdaforces[i, int(dir == 0)]
+            
+    return SlidingSimSolutionProcessed(sol.xs, xdots, lambdas)
 
 if __name__ == "__main__": main()

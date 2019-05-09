@@ -1,4 +1,6 @@
 import numpy as np
+from argparse import ArgumentParser
+import pdb
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -7,23 +9,39 @@ from matplotlib import cm
 
 import torch
 
+from dynamics import SimType
+
 def main():
-    plot_data('out/data.npy')
+    parser = ArgumentParser()
+    parser.add_argument('--path', default='out/data.npy')
+    parser.add_argument('simtype', type=SimType, choices=list(SimType), default=SimType.FALLING)
+    opts = parser.parse_args()
 
-def plot_data(ax, path):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    plot_data(ax, opts.path, opts.simtype)
+    plt.show()
+
+def add_labels(ax, simtype):
+    if simtype == SimType.FALLING:
+        ax.set_xlabel('x')
+        ax.set_ylabel('xdot')
+    elif simtype == SimType.SLIDING:
+        ax.set_xlabel('u')
+        ax.set_ylabel('xdot')
+    ax.set_zlabel('lambda')
+
+
+def plot_data(ax, path, simtype):
     data = np.load(path)
-
 
     point_count = 3000
     ax.scatter(data[:point_count, 0],
                data[:point_count, 1],
                data[:point_count, 2])
+    add_labels(ax, simtype)
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('xdot')
-    ax.set_zlabel('lambda')
-
-def plot_net(ax, net, xrange, xdotrange):
+def plot_net(ax, net, xrange, xdotrange, simtype):
     xs = torch.tensor(np.linspace(xrange[0], xrange[1], 30))
     xdots = torch.tensor(np.linspace(xdotrange[0], xdotrange[1], 30))
 
@@ -38,11 +56,6 @@ def plot_net(ax, net, xrange, xdotrange):
                     grid_xdot.detach().numpy(),
                     grid_lambdas.detach().numpy(),
                     cmap = cm.hot, alpha=0.2)
-
-    ax.set_xlabel('x')
-    ax.set_ylabel('xdot')
-    ax.set_zlabel('lambda')
-
-    plt.show()
+    add_labels(ax, simtype)
 
 if __name__ == "__main__": main()
