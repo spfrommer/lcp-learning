@@ -1,0 +1,131 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{parskip}
+\usepackage[margin=0.5in]{geometry}
+
+\begin{document}
+
+\title{LCP Notes}
+\author{Samuel Pfrommer}
+
+\maketitle
+
+\section{Falling block}
+Consider a block of unit mass falling from an arbitrary height onto a static surface under the influence of a gravitational force with constant $-g$. We then have the following equations of motion:
+\begin{align*}
+    x_{k+1} &= x_k + \dot x_{k+1} \Delta t \\
+    \dot x_{k+1} &= \dot x_k + (-g + \lambda _{k+1}) \Delta t
+\end{align*}
+
+Where $x_n$ represents the separation of the block from the surface at time step $n$, $\lambda_n$ is the nonpenetration contact force, and $\Delta t$ is our discrete time step. Note we are using implicit euler to prevent penetration of the block with the surface. Substituting the second equation into the first we have:
+\begin{align*}
+    x_{k+1} &= x_k + (\dot x_k + (-g + \lambda _{k+1}) \Delta t) \Delta t \\
+    x_{k+1} &= x_k + \dot x_k \Delta t + -g \Delta t ^2 + \lambda _{k+1} \Delta t ^2 \\
+    \lambda_{k+1} &= \frac{1}{\Delta t^2} x_{k+1} - \frac{1}{\Delta t^2} x_k - \frac{1}{\Delta t} \dot x_k + g \\
+    \lambda_{k+1} &= \frac{1}{\Delta t^2} x_{k+1} - \frac{1}{\Delta t^2} (x_k + \Delta t \dot x_k - g \Delta t^2)
+\end{align*}
+
+Observe that we solve an LCP for each time step, and as such $x_k$ and $\dot x_k$ are given to us from the previous time step. The problem therefore consists of solving for $x_{k+1}$, $\dot x_{k+1}$, and $\lambda_{k+1}$. Since $\lambda_{k+1}$ determines $\dot x_{k+1}$ we can ignore $\dot x_{k+1}$ and instead consider the following LCP:
+\begin{align*}
+    \lambda_{k+1} &\geq 0 \quad \textrm{only permit separating forces}\\
+    x_{k+1} &\geq 0 \quad \textrm{no penetration}\\
+    \lambda_{k+1} x_{k+1}&= 0 \quad \textrm{must have contact to have force}\\
+    \lambda_{k+1} &= M x_{k+1} + q
+\end{align*}
+
+With $M=\frac{1}{\Delta t^2}$ and $q=- \frac{1}{\Delta t^2} (x_k + \Delta t \dot x_k - g \Delta t^2)$ from the equation above.
+
+\section{Sliding block}
+\subsection{Forwards case}
+Consider a block of unit mass sliding in 1D on a surface under a positive external force $u_n$ with static/dynamic coefficient of friction $\mu$ and friction force $\lambda_n$. We have the following EOM:
+\begin{align*}
+    x_{k+1} &= x_k + \dot x_{k+1} \Delta t \\
+    \dot x_{k+1} &= \dot x_k + (u_{k+1} - \lambda_{k+1}) \Delta t
+\end{align*}
+
+Observe that now the relevant constraint is that the velocity $\dot x_{k+1}$ must always be positive. Furthermore, to encode stick/slide transitions, we want:
+
+\begin{align*}
+    0 \leq \mu g - \lambda_{k+1} \perp \dot x_{k+1} \geq 0
+\end{align*}
+
+Such that when the block is moving, $\lambda_{k+1} = \mu g$ (i.e. the maximum friction force is being used to oppose the motion), and when the block is stationary $\lambda_{k+1} < \mu g$ (i.e. some smaller static friction force is being used). To encode this constraint as an LCP, we introduce the new variable $\lambda'_{k+1} = \mu g - \lambda_{k+1}$, where $\lambda '_{k+1}$ intuitively represents the ``unused" friction force. Furthermore, since we are interested in bounding velocity we will instead just use the second EOM:
+\begin{align*}
+    \dot x_{k+1} &= \dot x_k + (u_{k+1} - \lambda_{k+1}) \Delta t \\
+    \dot x_{k+1} &= \dot x_k + (u_{k+1} + \lambda'_{k+1} - \mu g) \Delta t \\
+    \dot x_{k+1} &= \Delta t \cdot \lambda'_{k+1} + \dot x_k + \Delta t (u_{k+1} - \mu g) \\
+    \lambda'_{k+1} &= \frac{1}{\Delta t} \dot x_{k+1} - \frac{1}{\Delta t} (\dot x_k + \Delta t (u_{k+1} - \mu g))\\
+    \lambda'_{k+1} &= \frac{1}{\Delta t} \dot x_{k+1} - \frac{1}{\Delta t} \dot x_k - u_{k+1} + \mu g
+\end{align*}
+
+We can now write the LCP:
+\begin{align*}
+    \lambda'_{k+1} &\geq 0 \quad \textrm{friction force can't exceed $\mu$ times normal force} \\
+    \dot x_{k+1} &\geq 0 \quad \textrm{block is sliding to the right} \\
+    \lambda'_{k+1} \dot x_{k+1} &= 0 \quad \textrm{either block is stationary or using max friction force} \\
+    \lambda'_{k+1} &= M \dot x_{k+1} + q
+\end{align*}
+
+With $M = \frac{1}{\Delta t}$ and $q = - \frac{1}{\Delta t} \dot x_k - u_{k+1} + \mu g$ from the equation above.
+
+\subsection{Bidirectional case}
+For the bidirectional case we need to introduce more slack variables: $\dot x_{k+1}^+$, $\dot x_{k+1}^-$, $\lambda_{k+1}^+$, and $\lambda_{k+1}^-$, which are all positive numbers representing velocity / friction force in the + / - direction. We can then write:
+\begin{align*}
+    0 \leq \mu g - \lambda_{k+1}^- &\perp \dot x_{k+1}^+ \geq 0 \\
+    0 \leq \mu g - \lambda_{k+1}^+ &\perp \dot x_{k+1}^- \geq 0
+\end{align*}
+
+We again perform the substitution $\lambda'^+_{k+1} = \mu g - \lambda_{k+1}^+$ and $\lambda'^-_{k+1} = \mu g - \lambda_{k+1}^-$. We can now solve the EOM for both $\dot x^+_{k+1}$ and $\dot x^-_{k+1}$. Observe that instead of just $u_{k+1}$, we also need to subtract the force required to bring the complementary velocity to zero in one time step.
+\begin{align*}
+    \dot x^+_{k+1} &= \dot x^+_k + (u_{k+1} - \frac{1}{\Delta t} \dot x^-_{k} - \lambda^-_{k+1}) \Delta t \\
+    \dot x^+_{k+1} &= \dot x^+_k + (u_{k+1} - \frac{1}{\Delta t} \dot x^-_{k} + \lambda'^-_{k+1} - \mu g) \Delta t \\
+    \lambda'^-_{k+1} &= \frac{1}{\Delta t} \dot x^+_{k+1} - \frac{1}{\Delta t} \dot x^+_k - u_{k+1} + \frac{1}{\Delta t} \dot x^-_{k} + \mu g \\
+    \lambda'^-_{k+1} &= \frac{1}{\Delta t} \dot x^+_{k+1} + \frac{1}{\Delta t} \dot x^-_{k} - \frac{1}{\Delta t} \dot x^+_k - u_{k+1} + \mu g
+\end{align*}
+Similarly, we can get:
+\begin{align*}
+    \dot x^-_{k+1} &= \dot x^-_k + (-u_{k+1} - \frac{1}{\Delta t} \dot x^+_{k} - \lambda^+_{k+1}) \Delta t \\
+    \dot x^-_{k+1} &= \dot x^-_k + (-u_{k+1} - \frac{1}{\Delta t} \dot x^+_{k} + \lambda'^+_{k+1} - \mu g) \Delta t \\
+    \lambda'^+_{k+1} &= \frac{1}{\Delta t} \dot x^-_{k+1} - \frac{1}{\Delta t} \dot x^-_k + u_{k+1} + \frac{1}{\Delta t} \dot x^+_{k} + \mu g \\
+    \lambda'^+_{k+1} &= \frac{1}{\Delta t} \dot x^-_{k+1} + \frac{1}{\Delta t} \dot x^+_{k} - \frac{1}{\Delta t} \dot x^-_k + u_{k+1} + \mu g
+\end{align*}
+
+We can now put these in matrix form as:
+\[
+    \begin{bmatrix}
+        \lambda '^-_{k+1} \\
+        \lambda '^+_{k+1}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \frac{1}{\Delta t} & 0 \\
+        0 & \frac{1}{\Delta t}
+    \end{bmatrix}
+    \begin{bmatrix}
+        \dot x ^+_{k+1} \\
+        \dot x ^-_{k+1}
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        \frac{1}{\Delta t} \dot x^-_k - \frac{1}{\Delta t} \dot x^+_k - u_{k+1} + \mu g \\
+        \frac{1}{\Delta t} \dot x^+_k - \frac{1}{\Delta t} \dot x^-_k + u_{k+1} + \mu g
+    \end{bmatrix}
+\]
+
+This equation gives us the form of our $M$ matrix and $q$ vector. Note that the order of the equations is important; if we had stacked the $\lambda'^+_{k+1}$ on top of $\lambda'^-_{k+1}$, our resulting $M$ matrix would not be positive semidefinite (Lemke algorithm gives secondary rays). Furthermore, we would not get the desired complementarity constraints below:
+\begin{align*}
+    \lambda'^+_{k+1} &\geq 0\\
+    \lambda'^-_{k+1} &\geq 0 \\
+    \dot x^+_{k+1} &\geq 0 \\
+    \dot x^-_{k+1} &\geq 0 \\
+    \lambda'^-_{k+1} \dot x^+_{k+1} &= 0 \quad \textrm{block sliding to the right means all neg friction force used} \\
+    \lambda'^+_{k+1} \dot x^-_{k+1} &= 0 \quad \textrm{block sliding to the left means all pos friction force used}
+\end{align*}
+
+Finally, we can just update the positions by:
+\begin{align*}
+    x_{k+1} &= x_k + (\dot x^+_{k+1} - \dot x^-_{k+1})\Delta t \\
+\end{align*}
+ 
+\end{document}
