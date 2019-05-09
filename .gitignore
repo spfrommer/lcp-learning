@@ -1,1 +1,14 @@
+# code files
 *.pyc
+*.swp
+
+# data files
+*.npy
+
+# latex files
+*.aux
+*.dvi
+*.fls
+*.log
+*.synctex.gz
+*.fdb_latexmk
