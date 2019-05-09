@@ -14,7 +14,7 @@ from dynamics import SimType
 def main():
     parser = ArgumentParser()
     parser.add_argument('--path', default='out/data.npy')
-    parser.add_argument('simtype', type=SimType, choices=list(SimType), default=SimType.FALLING)
+    parser.add_argument('simtype', type=SimType, choices=list(SimType))
     opts = parser.parse_args()
 
     fig = plt.figure()
@@ -41,9 +41,9 @@ def plot_data(ax, path, simtype):
                data[:point_count, 2])
     add_labels(ax, simtype)
 
-def plot_net(ax, net, xrange, xdotrange, simtype):
+def plot_net(ax, net, xrange, yrange, simtype):
     xs = torch.tensor(np.linspace(xrange[0], xrange[1], 30))
-    xdots = torch.tensor(np.linspace(xdotrange[0], xdotrange[1], 30))
+    xdots = torch.tensor(np.linspace(yrange[0], yrange[1], 30))
 
     grid_x, grid_xdot = torch.meshgrid(xs, xdots)
     xs_vec = grid_x.reshape(-1, 1).float()
