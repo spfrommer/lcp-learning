@@ -40,12 +40,12 @@ def main():
 
     if opts.simtype == SimType.SLIDING:
         print('Solving sliding sim...')
-        p = SlidingSimParams(x0=0.0,  xdot0=0,  mu=1.0,
+        p = SlidingSimParams(x0=0.0,  xdot0=1,  mu=0.0,
                       g=1.0,   dt=1.0,     time_steps=30,
-                      us = (2) * np.ones(30))
+                      us = (0) * np.ones(30))
         sol = sliding_box_sim(p)
         print('Full output: ')
-        print('x, xdot+, xdot-, lambda+, lambda-')
+        print('x, xdot+, xdot-, lambda\'+, lambda\'-')
         print(np.hstack((sol.xs, sol.posxdots, sol.negxdots,
                          sol.poslambdas, sol.neglambdas)))
         sol_processed = process_sliding_solution(sol, p)
@@ -106,13 +106,17 @@ def sliding_box_sim(p):
         posxdots[t+1] = xdotsol[0]
         negxdots[t+1] = xdotsol[1]
         xs[t+1] = xs[t] + p.dt * (posxdots[t+1] - negxdots[t+1])
-
+        
         # Solver doesn't output slack variable
         # So we calculate it explicitely
         if np.isclose(xdotsol[0], 0):
             poslambdas[t+1] = np.dot(M[1,:], xdotsol) + q[1]
         if np.isclose(xdotsol[1], 0):
             neglambdas[t+1] = np.dot(M[0,:], xdotsol) + q[0]
+            pdb.set_trace()
+    
+    # Make sure both velocities can't be positive at the same time
+    assert((np.isclose(posxdots * negxdots, 0)).all())
 
     return SlidingSimSolution(xs, posxdots, negxdots, poslambdas, neglambdas)
 

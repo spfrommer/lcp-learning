@@ -1,8 +1,15 @@
 \documentclass{article}
 \usepackage{graphicx}
-\usepackage{amsmath}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{parskip}
 \usepackage[margin=0.5in]{geometry}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+\renewcommand{\qedsymbol}{$\blacksquare$}
+
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
 
 \begin{document}
 
@@ -125,7 +132,41 @@ This equation gives us the form of our $M$ matrix and $q$ vector. Note that the 
 
 Finally, we can just update the positions by:
 \begin{align*}
-    x_{k+1} &= x_k + (\dot x^+_{k+1} - \dot x^-_{k+1})\Delta t \\
+    x_{k+1} &= x_k + (\dot x^+_{k+1} - \dot x^-_{k+1})\Delta t
 \end{align*}
- 
+
+\subsection{Sanity checks}
+\subsubsection{Velocity characteristics}
+\begin{lemma}
+    The positive and negative velocities at any time step are complementary; i.e., $\dot x^+_k \cdot \dot x^-_k = 0$ for all time steps $k$.
+\end{lemma}
+\begin{proof}
+Since $\dot x^+_k$ and $\dot x^-_k$ are both optimization variables they are not immediately constrained to be complimentary; however, this ends up being the case. Empirically, this constraint was never violated for about 30,000 time steps with random forces using the above formulation.  It can also formally be proven via induction (assuming $\Delta t = 1$ for notational cleanliness):
+
+Assume $\dot x^+_k \perp \dot x^-_k$; we want to show that $\dot x^+_{k+1} \perp \dot x^-_{k+1}$. Observe that the base case is trivial (assign all of $\dot x_0$ to the appropriate direction and set the other direction to zero). Now assume WLOG of generality that from our induction hypothesis we have $\dot x^+_k = 0$. We can then write:
+\begin{align*}
+    \dot x^+_{k+1} &= \dot x^+_k + u_{k+1} - \dot x^-_{k} - \lambda^-_{k+1} = u_{k+1} - \dot x^-_k - \lambda^-_{k+1} \leq u_{k+1} - \dot x^-_k\\
+    \dot x^-_{k+1} &= \dot x^-_k - u_{k+1} - \dot x^+_{k} - \lambda^+_{k+1} = -u_{k+1} + \dot x^- _k - \lambda^+_{k+1} \leq -(u_{k+1} - \dot x^-_k)
+\end{align*}
+
+It is now easy to see that one of $\dot x^+_{k+1}$ or $\dot x^-_{k+1}$ must be nonpositive; the only way this can satisfy the nonnegativity constraint is for the corresponding velocity in the next time step to be zero, satisfying $\dot x^+_{k+1} \perp \dot x^-_{k+1}$.
+\end{proof}
+
+\subsubsection{Summed velocity}
+
+Let's double check what happens when we add our velocities to get the overall velocity $\dot x_{k+1}$.
+\begin{align*}
+    \dot x^+_{k+1} &= \dot x^+_k + (u_{k+1} - \frac{1}{\Delta t} \dot x^-_{k} - \lambda^-_{k+1}) \Delta t \\
+    - \Big( \dot x^-_{k+1} &= \dot x^-_k + (-u_{k+1} - \frac{1}{\Delta t} \dot x^+_{k} - \lambda^+_{k+1}) \Delta t \Big) \\
+    \dot x^+_{k+1} - \dot x^-_{k+1} &= 2 (\dot x^+_k - \dot x^-_k) + 2 u_{k+1} \Delta t + (\lambda^+_{k+1} - \lambda^-_{k+1}) \Delta t \numberthis \label{cont}
+\end{align*}
+
+At first glance, the factors of 2 don't look quite right (why is velocity doubling every timestep?). However, this is actually not an issue.
+
+The reason why is pretty unintuitive and has to do with the fact that our friction forces are being encoded as the slack variables $w = Mz + q$. The best way to see this is with a simple example. Assume that the block is moving with a constant rightwards velocity $\dot x^+_k = \dot x^+_{k+1} = 1$, and frictional / input forces are zero. Then by the above lemma, we have $\dot x^-_k = \dot x^-_{k+1} = 0$; the corresponding variables $\lambda'^+_{k}$ and $\lambda'^+_{k+1}$ are now free to vary. We can now satisfy equation \eqref{cont} by letting $\lambda'^+_{k+1} = 1$ (this is what the LCP outputs as well). Observe that since $\mu g = 0$, this actual creates a fictitious force $\lambda^+_{k+1} = -1$ which prevents the block from increasing in velocity and keeps it moving in a straight line.
+
+Essentially, we structured the problem in a way that the slack variable $w = Mz + q$ had rough physical meaning; it's not trivial to extract the corresponding friction forces but is also not too tricky (see process\_sliding\_solution in dynamics.py). The nice thing about this formulation is that $M$ is 2x2 and a multiple of the identity and therefore positive definite, so we're guaranteed a unique LCP solution. We also managed to use 2 complimentarity constraints instead of 3.
+
+TODO: reformulate using the traditional slack variable method
+
 \end{document}
