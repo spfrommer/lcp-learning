@@ -40,16 +40,16 @@ def main():
 
     if opts.simtype == SimType.SLIDING:
         print('Solving sliding sim...')
-        p = SlidingSimParams(x0=0.0,  xdot0=-4,  mu=2.0,
+        p = SlidingSimParams(x0=0.0,  xdot0=0,  mu=3.0,
                       g=1.0,   dt=1.0,     time_steps=30,
                       us = (1) * np.ones(30))
         sol = sliding_box_sim(p)
-        print('Full output: ')
+        print('Full output (ignore first lambda): ')
         print('x, xdot+, xdot-, lambda\'+, lambda\'-')
         print(np.hstack((sol.xs, sol.posxdots, sol.negxdots,
                          sol.poslambdas, sol.neglambdas)))
         sol_processed = process_sliding_solution(sol, p)
-        print('Processed output: ')
+        print('Processed output (ignore first lambda): ')
         print('x, xdot, lambda')
         print(np.hstack((sol_processed.xs, sol_processed.xdots,
                          sol_processed.lambdas)))
