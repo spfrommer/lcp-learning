@@ -10,6 +10,8 @@
 \renewcommand{\qedsymbol}{$\blacksquare$}
 
 \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\rvec}[1]{\begin{bmatrix} #1 \end{bmatrix}}
 
 \begin{document}
 
@@ -167,6 +169,86 @@ The reason why is pretty unintuitive and has to do with the fact that our fricti
 
 Essentially, we structured the problem in a way that the slack variable $w = Mz + q$ had rough physical meaning; it's not trivial to extract the corresponding friction forces but is also not too tricky (see process\_sliding\_solution in dynamics.py). The nice thing about this formulation is that $M$ is 2x2 and a multiple of the identity and therefore positive definite, so we're guaranteed a unique LCP solution. We also managed to use 2 complimentarity constraints instead of 3.
 
-TODO: reformulate using the traditional slack variable method
+\subsection{Traditional formulation}
+The traditional formulation of the above bidirectional sliding block problem involves a third variables, $\gamma$, which is effectively an upper bound on the absolute value of the sliding velocity. We still decompose $\lambda$ into $\lambda_+$ and $\lambda_-$, but these are now $z$ variables instead of $w$ variables in the LCP. Velocity isn't a decision variable in the formulation. Observe that we can write (assuming $\Delta t = 1$):
+\[
+    v_{k+1} = v_k + \lambda^+_{k+1} - \lambda^-_{k+1} + u_{k+1}
+\]
+And now have the following complimentarity constraints:
+\begin{align*}
+    0 \leq \lambda^+_{k+1} &\perp \gamma_{k+1} + v_{k+1} \geq 0 \quad \textrm{use positive friction force if block is moving to the left}\\
+    0 \leq \lambda^-_{k+1} &\perp \gamma_{k+1} - v_{k+1} \geq 0 \quad \textrm{use negative friction force if block is moving to the right}\\
+    0 \leq \gamma_{k+1} &\perp m g \mu - \lambda^+_{k+1} - \lambda^-_{k+1} \geq 0 \quad \textrm{use max friction force if block is moving}
+\end{align*}
+
+We can now substitute in for $v_{k+1}$ to only include our decision variables and constants:
+\begin{align*}
+    0 \leq \lambda^+_{k+1} &\perp \gamma_{k+1} + v_k + \lambda^+_{k+1} - \lambda^-_{k+1} + u_{k+1} \geq 0 \\
+    0 \leq \lambda^-_{k+1} &\perp \gamma_{k+1} - v_k - \lambda^+_{k+1} + \lambda^-_{k+1} - u_{k+1} \geq 0 \\
+    0 \leq \gamma_{k+1} &\perp m g \mu - \lambda^+_{k+1} - \lambda^-_{k+1} \geq 0
+\end{align*}
+
+Now this can be written in matrix form as:
+\[
+    0 \leq 
+    \begin{bmatrix}
+        \lambda^+_{k+1} \\
+        \lambda^-_{k+1} \\
+        \gamma_{k+1}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        1 & -1 & 1 \\
+        -1 & 1 & 1 \\
+        -1 & -1 & 0
+    \end{bmatrix}
+    \begin{bmatrix}
+        \lambda^+_{k+1} \\
+        \lambda^-_{k+1} \\
+        \gamma_{k+1}
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        v_k + u_{k+1} \\
+        -v_k - u_{k+1} \\
+        m g \mu
+    \end{bmatrix}
+    \geq 0
+\]
+
+In this case I believe $M$ is a P-matrix and Lemke's algorithm is guaranteed to have a unique solution.
+
+\section{Learning}
+We want to ultimately learn the dynamics for a full Kuka arm interacting with an object, but we start with just the sliding block example. The most obvious idea is to learn the unknown friction force $\lambda = f(x, u)$ by fitting a neural network or some other function approximator to the raw data. However, this approach won't be able to properly capture sticking behavior. We need some way of embedding the complementary nature of the problem into our learning algorithm. 
+
+\subsection{Known frictional forces}
+Assume that we know the friction forces vector $\vec{\lambda} = \rvec{\lambda^- & \lambda^+}$, which contains the complementary positive/negative friction components. We want to predict the velocity vector $\vec{\dot x} = \rvec{\dot x^+ & \dot x^-}$ (order flipped to preserve complementarity); we will denote the scalar velocity as $\dot x$ without boldface. Let's claim that $\vec{\dot x}$ is affine in $\vec{\lambda}$, as is the case from teh underlying dynamics. Then we can learn two functions $\vec{f}$ (2x1 vector) and $G$ (2x2 matrix) such that:
+\[
+    \vec{\dot x}_{k+1} = \vec{f}(\dot x_k, u_{k+1}) + G(\dot x_k, u_{k+1}) \vec{\lambda}_{k+1}
+\]
+Let's consider the true system we're trying to learn:
+\begin{align*}
+    \dot x^+_{k+1} &= \dot x^+_k + \Delta t \cdot u_{k+1} - \dot x^-_{k} - \Delta t \cdot \lambda^-_{k+1} \\
+    \dot x^-_{k+1} &= \dot x^-_k - \Delta t \cdot u_{k+1} - \dot x^+_{k} - \Delta t \cdot \lambda^+_{k+1}
+\end{align*}
+This can be written in matrix form as:
+\[
+    \vec{\dot x}_{k+1} = \begin{bmatrix} \dot x^+_{k+1} \\ \dot x^-_{k+1} \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \Delta t \cdot u_{k+1} \\
+        -\Delta t \cdot u_{k+1}
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        -\Delta t & 0 \\
+        0 & -\Delta t
+    \end{bmatrix}
+    \begin{bmatrix}
+        \lambda^-_{k+1} \\
+        \lambda^+_{k+1}
+    \end{bmatrix}
+\]
+
 
 \end{document}
