@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 import pdb
 
 from dynamics import *
+from sims import *
 
 import progressbar
 
@@ -28,24 +29,6 @@ def random_sliding_params():
                          us=rand.uniform(-3,3,size=(time_steps, 1)))
     return p
 
-# Lines up xs/xdots from one time step to lambdas of the next
-# And concatenates them into a matrix
-# Goes from n entries -> n - 1
-# Used to prep data for input into ML
-def format_falling_data(xs, xdots, lambdas):
-    xs = xs[:-1]
-    xdots = xdots[:-1]
-    lambdas = lambdas[1:]
-    return np.hstack((xs, xdots, lambdas))
-
-# Similar idea but for sliding data
-# This time we use us from the next time step
-def format_sliding_data(us, xdots, lambdas):
-    us = us[1:]
-    xdots = xdots[:-1]
-    lambdas = lambdas[1:]
-    return np.hstack((us, xdots, lambdas))
-
 def main():
     parser = ArgumentParser()
     parser.add_argument('simtype', type=SimType, choices=list(SimType))
@@ -53,7 +36,7 @@ def main():
     opts = parser.parse_args()
 
     run_rows = time_steps - 1
-    dataset = np.zeros((runs * run_rows, 3))
+    dataset = np.zeros((runs * run_rows, variable_count(opts.simtype)))
     
     print('Generating {} runs...'.format(runs))
     bar = progressbar.ProgressBar(maxval=runs, \
@@ -65,17 +48,17 @@ def main():
         if opts.simtype == SimType.FALLING:
             p = random_falling_params()
             sol = falling_box_sim(p)
-            data = format_falling_data(sol.xs, sol.xdots, sol.lambdas)
+            data = marshal_falling_data(sol)
         elif opts.simtype == SimType.SLIDING:
             p = random_sliding_params()
             sol = sliding_box_sim(p)
             sol = process_sliding_solution(sol, p)
-            data = format_sliding_data(p.us, sol.xdots, sol.lambdas)
+            data = marshal_sliding_data(sol)
 
         dataset[i * run_rows : (i+1) * run_rows, :] = data
 
     bar.finish()
-
-    np.save(opts.path, dataset.astype(np.float32))
+    
+    save_marshalled_data(dataset, opts.path)
 
 if __name__ == "__main__": main()

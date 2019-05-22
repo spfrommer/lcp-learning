@@ -10,6 +10,13 @@ from matplotlib import cm
 import torch
 
 from dynamics import SimType
+from sims import *
+
+MAX_POINT_RENDER = 3000
+DATA_MARKER_COLOR = 'blue'
+DATA_MARKER_SIZE = 3
+PRED_MARKER_COLOR = 'red'
+PRED_MARKER_SIZE = 3
 
 def main():
     parser = ArgumentParser()
@@ -20,42 +27,57 @@ def main():
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     plot_data(ax, opts.path, opts.simtype)
+    add_labels(ax, opts.simtype)
     plt.show()
+
+def plot_data(ax, path, simtype):
+    if simtype == SimType.FALLING:
+        data = load_falling_data(path)
+        ax.scatter(data.xs[:MAX_POINT_RENDER],
+                   data.xdots[:MAX_POINT_RENDER],
+                   data.lambdas[:MAX_POINT_RENDER],
+                   c=DATA_MARKER_COLOR, s=DATA_MARKER_SIZE)
+    elif simtype == SimType.SLIDING:
+        data = load_sliding_data(path)
+        ax.scatter(data.xdots[:MAX_POINT_RENDER],
+                   data.us[:MAX_POINT_RENDER],
+                   data.next_xdots[:MAX_POINT_RENDER],
+                   c=DATA_MARKER_COLOR, s=DATA_MARKER_SIZE)
+
+def surf_net(ax, net, xrange, yrange, net_process=lambda x:x):
+    xs = torch.tensor(np.linspace(xrange[0], xrange[1], 30))
+    ys = torch.tensor(np.linspace(yrange[0], yrange[1], 30))
+
+    grid_x, grid_y = torch.meshgrid(xs, ys)
+    xs_vec = grid_x.reshape(-1, 1).float()
+    ys_vec = grid_y.reshape(-1, 1).float()
+
+    zs = net_process(net(torch.cat((xs_vec, ys_vec), dim=1)))
+    grid_z = zs.reshape(grid_x.shape)
+
+    ax.plot_surface(grid_x.detach().numpy(),
+                    grid_y.detach().numpy(),
+                    grid_z.detach().numpy(),
+                    cmap = cm.hot, alpha=0.2)
+
+def data_net(ax, net, states, net_process=lambda x:x):
+    zs = net_process(net(states))
+    ax.scatter(states[:MAX_POINT_RENDER, 0].detach().numpy(),
+               states[:MAX_POINT_RENDER, 1].detach().numpy(),
+               zs[:MAX_POINT_RENDER].detach().numpy(),
+               c=PRED_MARKER_COLOR, s=PRED_MARKER_SIZE)
+    #ax.plot_trisurf(states[:MAX_POINT_RENDER, 0].detach().numpy(),
+    #           states[:MAX_POINT_RENDER, 1].detach().numpy(),
+    #           zs[:MAX_POINT_RENDER].detach().numpy())
 
 def add_labels(ax, simtype):
     if simtype == SimType.FALLING:
-        ax.set_xlabel('x')
-        ax.set_ylabel('xdot')
+        ax.set_xlabel('x(k)')
+        ax.set_ylabel('xdot(k)')
+        ax.set_zlabel('lambda(k+1)')
     elif simtype == SimType.SLIDING:
-        ax.set_xlabel('u')
-        ax.set_ylabel('xdot')
-    ax.set_zlabel('lambda')
-
-
-def plot_data(ax, path, simtype):
-    data = np.load(path)
-
-    point_count = 3000
-    ax.scatter(data[:point_count, 0],
-               data[:point_count, 1],
-               data[:point_count, 2])
-    add_labels(ax, simtype)
-
-def plot_net(ax, net, xrange, yrange, simtype):
-    xs = torch.tensor(np.linspace(xrange[0], xrange[1], 30))
-    xdots = torch.tensor(np.linspace(yrange[0], yrange[1], 30))
-
-    grid_x, grid_xdot = torch.meshgrid(xs, xdots)
-    xs_vec = grid_x.reshape(-1, 1).float()
-    xdots_vec = grid_xdot.reshape(-1, 1).float()
-
-    lambdas = net(torch.cat((xs_vec, xdots_vec), dim=1))
-    grid_lambdas = lambdas.reshape(grid_x.shape)
-
-    ax.plot_surface(grid_x.detach().numpy(),
-                    grid_xdot.detach().numpy(),
-                    grid_lambdas.detach().numpy(),
-                    cmap = cm.hot, alpha=0.2)
-    add_labels(ax, simtype)
+        ax.set_xlabel('xdot(k)')
+        ax.set_ylabel('u(k+1)')
+        ax.set_zlabel('xdot(k+1)')
 
 if __name__ == "__main__": main()
