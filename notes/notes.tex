@@ -9,6 +9,7 @@
 \newtheorem{corollary}{Corollary}[theorem]
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{remark}{Remark}
+\newtheorem{note}{Note}
 \renewcommand{\qedsymbol}{$\blacksquare$}
 
 % Fix theorem spacing
@@ -196,6 +197,13 @@ The reason why is pretty unintuitive and has to do with the fact that our fricti
 
 Essentially, we structured the problem in a way that the slack variable $w = Mz + q$ had rough physical meaning. Unless the block is at rest with no external force, there is always a physical positive friction force in one direction, and a fictitious negative friction force in the opposite direction. The nice thing about this formulation is that $M$ is 2x2 and a multiple of the identity and therefore positive definite, so we're guaranteed a unique LCP solution. We also managed to use 2 complimentarity constraints instead of 3.
 
+\subsection{Generalization}
+Do the convenient above results generalize? Let's consider the case where $u$ does not necessarily align with $\dot x$; so, we're looking at an $xy$ plane. You can't just solve an LCP for $x$ and an LCP for $y$ since it's unclear what you would set your max friction force to. That's coupled between $x$ and $y$ and must be in the direction of $v$ from the next time step. I think you can probably do some kind of a polyhedral approximation similar to the classic Stewart paper, but I haven't worked it out yet.
+
+\begin{note}
+    What if we aligned bases with $u$ and $v$?
+\end{note}
+
 \subsection{Traditional formulation}
 The traditional formulation of the above bidirectional sliding block problem involves a third variables, $\gamma$, which is effectively an upper bound on the absolute value of the sliding velocity. We still decompose $\lambda$ into $\lambda_+$ and $\lambda_-$, but these are now $z$ variables instead of $w$ variables in the LCP. Velocity isn't a decision variable in the formulation. Observe that we can write (assuming $\Delta t = 1$):
 \[
@@ -244,6 +252,10 @@ Now this can be written in matrix form as:
 \]
 
 In this case I believe $M$ is a P-matrix and Lemke's algorithm is guaranteed to have a unique solution.
+
+\begin{note}
+    Matt says P and Q matrices are useless. Didn't quite understand why but apparently we can't really use them effectively.
+\end{note}
 
 \section{Learning}
 We want to ultimately learn the dynamics for a full Kuka arm interacting with an object, but we start with just the sliding block example. The most obvious idea is to learn the unknown friction force $\lambda = f(\dot x, u)$ by fitting a neural network or some other function approximator to the raw data. However, this approach won't be able to properly capture sticking behavior. We need some way of embedding the complementary nature of the problem into our learning algorithm. 
