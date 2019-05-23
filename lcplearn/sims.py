@@ -27,20 +27,20 @@ def dynamics_module(simtype):
 
 def model_module(modeltype):
     import falling.model as FallingModel
-    #import sliding.direct.model as SlidingDirectModel
+    import sliding.direct.model as SlidingDirectModel
 
     if modeltype == ModelType.FALLING:
         return FallingModel
-    #elif simtype == SimType.SLIDING_DIRECT:
-    #    return SlidingDirectDynamics
+    elif modeltype == ModelType.SLIDING_DIRECT:
+        return SlidingDirectModel
 
 def analyze_module(modeltype):
     import falling.analyze as FallingAnalyze
-    #import sliding.direct.analyze as SlidingDirectAnalyze
+    import sliding.direct.analyze as SlidingDirectAnalyze
 
     if modeltype == ModelType.FALLING:
         return FallingAnalyze
-    #elif simtype == SimType.SLIDING_DIRECT:
-    #    return SlidingDirectDynamics
+    elif modeltype == ModelType.SLIDING_DIRECT:
+        return SlidingDirectAnalyze
 
 

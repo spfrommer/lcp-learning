@@ -4,6 +4,7 @@
 
 # data files
 *.npy
+*.pt
 
 # latex files
 *.aux

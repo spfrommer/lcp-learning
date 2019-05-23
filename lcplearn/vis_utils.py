@@ -23,20 +23,6 @@ def scatter_data(ax, xs, ys, zs):
                zs[:MAX_POINT_RENDER],
                c=DATA_MARKER_COLOR, s=DATA_MARKER_SIZE)
 
-def plot_data_old(ax, path, simtype):
-    if simtype == SimType.FALLING:
-        data = load_falling_data(path)
-        ax.scatter(data.xs[:MAX_POINT_RENDER],
-                   data.xdots[:MAX_POINT_RENDER],
-                   data.lambdas[:MAX_POINT_RENDER],
-                   c=DATA_MARKER_COLOR, s=DATA_MARKER_SIZE)
-    elif simtype == SimType.SLIDING:
-        data = load_sliding_data(path)
-        ax.scatter(data.xdots[:MAX_POINT_RENDER],
-                   data.us[:MAX_POINT_RENDER],
-                   data.next_xdots[:MAX_POINT_RENDER],
-                   c=DATA_MARKER_COLOR, s=DATA_MARKER_SIZE)
-
 def surf_net(ax, net, xrange, yrange, net_process=lambda x:x):
     xs = torch.tensor(np.linspace(xrange[0], xrange[1], 30))
     ys = torch.tensor(np.linspace(yrange[0], yrange[1], 30))
@@ -64,18 +50,8 @@ def scatter_net(ax, net, states, net_process=lambda x:x):
     #           zs[:MAX_POINT_RENDER].detach().numpy())
 
 def add_labels(ax, xlabel, ylabel, zlabel):
-    ax.set_xlabel('x(k)')
-    ax.set_ylabel('xdot(k)')
-    ax.set_zlabel('lambda(k+1)')
-
-def add_labels_old(ax, simtype):
-    if simtype == SimType.FALLING:
-        ax.set_xlabel('x(k)')
-        ax.set_ylabel('xdot(k)')
-        ax.set_zlabel('lambda(k+1)')
-    elif simtype == SimType.SLIDING:
-        ax.set_xlabel('xdot(k)')
-        ax.set_ylabel('u(k+1)')
-        ax.set_zlabel('xdot(k+1)')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_zlabel(zlabel)
 
 if __name__ == "__main__": main()

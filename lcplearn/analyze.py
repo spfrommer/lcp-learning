@@ -23,6 +23,6 @@ def main():
     net.load_state_dict(torch.load(opts.netpath))
     net.eval()
 
-    analyze.handle_vis(net, opts)
+    analyze.analyze(net, opts)
 
 if __name__ == "__main__": main()

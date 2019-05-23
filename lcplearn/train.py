@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 from argparse import ArgumentParser
 import pdb
 

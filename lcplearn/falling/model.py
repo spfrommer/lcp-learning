@@ -25,9 +25,7 @@ def learning_setup():
                         n_hidden=5, n_output=1)
     # Add dummy arg to match function signature
     loss = lambda ys_p,ys,states: torch.nn.MSELoss().forward(ys_p, ys)
-
     optimizer = torch.optim.Adam(model.parameters(), lr=0.2)
-    
     return model, loss, optimizer
 
 class StandardNet(torch.nn.Module):
