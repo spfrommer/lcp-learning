@@ -103,6 +103,3 @@ def main():
     print('x, xdot, lambda')
     print(np.hstack((sol_processed.xs, sol_processed.xdots,
                      sol_processed.lambdas)))
-
-if __name__ == "__main__": main()
-

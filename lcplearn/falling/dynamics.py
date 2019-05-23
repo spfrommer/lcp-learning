@@ -60,11 +60,9 @@ def unmarshal_data(data):
 
 def main():
     print('Solving falling sim...')
-    pp = FallingPhysicsParams  (g=1.0,         dt=1.0)
-    sp = FallingSimParams      (x0=20.0,       xdot0=4.0,
-                                lambda0=0.0,   time_steps=30)
+    pp = PhysicsParams  (g=1.0,         dt=1.0)
+    sp = SimParams      (x0=20.0,       xdot0=4.0,
+                         lambda0=0.0,   time_steps=30)
     sol = sim(pp, sp)
     print('x, xdot, lambda')
     print(np.hstack((sol.xs, sol.xdots, sol.lambdas)))
-
-if __name__ == "__main__": main()
