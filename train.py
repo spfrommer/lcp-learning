@@ -137,7 +137,7 @@ def structured_loss(next_xdots_pred, next_xdots, states):
     nonneg_term = torch.norm(torch.max(
         torch.zeros(next_xdots_pred.shape), -next_xdots_pred), 1)
     
-    w = torch.tensor([1, 0, 0])
+    w = torch.tensor([1, 1, 0])
 
     return w[0] * err_term + w[1] * comp_term + w[2] * nonneg_term
 
@@ -156,6 +156,7 @@ class StructuredNet(torch.nn.Module):
         
         xdots = fxu + torch.bmm(Gxu, lambdas.unsqueeze(2)).squeeze(2) 
 
+        #return xdots
         return F.relu(xdots)
 
 class StandardNet(torch.nn.Module):
