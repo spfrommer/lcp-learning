@@ -4,6 +4,7 @@ import numpy.random as rand
 from argparse import ArgumentParser
 import pdb
 
+import falling.dynamics as FallingDynamics
 from dynamics import *
 from sims import *
 
@@ -16,10 +17,11 @@ time_steps = 30
 runs = 1000
 
 def random_falling_params():
-    p = FallingSimParams(x0=rand.uniform(0,20), xdot0=rand.uniform(-5,5),
-                         lambda0=0.0,           g=g,
-                         dt=dt,                 time_steps=time_steps)
-    return p
+    pp = FallingDynamics.PhysicsParams(g=g, dt=dt)
+    sp = FallingDynamics.SimParams(
+                         x0=rand.uniform(0,20), xdot0=rand.uniform(-5,5),
+                         lambda0=0.0,           time_steps=time_steps)
+    return pp, sp
 
 def random_sliding_params(): 
     mu = 1;
@@ -46,9 +48,9 @@ def main():
     for i in range(runs):
         bar.update(i+1)
         if opts.simtype == SimType.FALLING:
-            p = random_falling_params()
-            sol = falling_box_sim(p)
-            data = marshal_falling_data(sol)
+            pp, sp = random_falling_params()
+            sol = FallingDynamics.sim(pp, sp)
+            data = FallingDynamics.marshal_data(sol)
         elif opts.simtype == SimType.SLIDING:
             p = random_sliding_params()
             sol = sliding_box_sim(p)

@@ -1,5 +1,3 @@
-import sys
-import math
 import numpy as np
 from argparse import ArgumentParser
 import pdb
