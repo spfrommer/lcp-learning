@@ -6,9 +6,12 @@ import lemkelcp
 
 # x corresponds to height
 PhysicsParams = namedtuple('falling_physics_params', 'g dt')
-SimParams = namedtuple('falling_params', 'x0 xdot0 lambda0 time_steps')
+SimParams = namedtuple('falling_sim_params', 'x0 xdot0 lambda0 time_steps')
 SimSolution = namedtuple('falling_solution', 'xs, xdots, lambdas')
 SimData = namedtuple('falling_data', 'xs, xdots, lambdas')
+
+MARSHALLED_SIZE = 3
+HAS_PROCESSING = False
 
 def lcp(x, xdot, pp):
     M = np.array([[(1/pp.dt)**2]])
@@ -61,7 +64,7 @@ def main():
     print('Solving falling sim...')
     pp = FallingPhysicsParams  (g=1.0,         dt=1.0)
     sp = FallingSimParams      (x0=20.0,       xdot0=4.0,
-                                 lambda0=0.0,   time_steps=30)
+                                lambda0=0.0,   time_steps=30)
     sol = sim(pp, sp)
     print('x, xdot, lambda')
     print(np.hstack((sol.xs, sol.xdots, sol.lambdas)))
