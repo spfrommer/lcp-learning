@@ -39,6 +39,7 @@ def main():
     train_loss = loss_func(net(states), ys, states).data.numpy()
 
     print('Finished training with loss: {}'.format(train_loss.item()))
+    handle_print(states, net, opts)
     handle_plot(states, net, opts)
     
 def handle_plot(states, net, opts):
@@ -57,6 +58,15 @@ def handle_plot(states, net, opts):
 
     plot.add_labels(ax, opts.simtype)
     plt.show()
+
+def handle_print(states, net, opts):
+    if opts.simtype == SimType.SLIDING:
+        print('f:')
+        print(net.f.weight)
+        print(net.f.bias)
+        print('G:')
+        print(net.G.weight)
+        print(net.G.bias)
 
 def load_data(path, simtype):
     if simtype == SimType.FALLING:
@@ -143,8 +153,10 @@ class StructuredNet(torch.nn.Module):
         xus = states[:, 0:2]
         fxu = self.f(xus)
         Gxu = self.G(xus).view(-1, 2, 2)
+        
+        xdots = fxu + torch.bmm(Gxu, lambdas.unsqueeze(2)).squeeze(2) 
 
-        return fxu + torch.bmm(Gxu, lambdas.unsqueeze(2)).squeeze(2)
+        return F.relu(xdots)
 
 class StandardNet(torch.nn.Module):
     def __init__(self, n_feature, n_hidden, n_output):

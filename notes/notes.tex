@@ -310,8 +310,8 @@ Now assume that we know the slack friction forces vector $\vec{\lambda'} = \rvec
     =
     -
     \begin{bmatrix}
-        x^-_k - x^+_k - u_{k+1} \Delta t + \mu g \Delta t \\
-        x^+_k - x^-_k + u_{k+1} \Delta t + \mu g \Delta t  
+        - \dot x_k - u_{k+1} \Delta t + \mu g \Delta t \\
+        \dot x_k + u_{k+1} \Delta t + \mu g \Delta t  
     \end{bmatrix}
     +
     \begin{bmatrix}
@@ -329,7 +329,7 @@ Now assume that we know the slack friction forces vector $\vec{\lambda'} = \rvec
 \end{remark}
 
 \begin{remark}
-    I think going about this by penalizing LCP violations is not the right path forward. Instead, we should be using the fact that velocities are decomposed to help enforce sticking. More specifically, we should probably relu the output to allow totally zero velocities to be produced. 
+    I think going about this by penalizing LCP violations is not the right path forward. Instead, we should be using the fact that velocities are decomposed to help enforce sticking. More specifically, we should probably relu the output to allow totally zero velocities to be produced.
 \end{remark}
 
 \begin{remark}
