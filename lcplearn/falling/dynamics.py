@@ -22,10 +22,8 @@ def lcp(x, xdot, pp):
 def slack_calc(xsol, M, q):
     # Solver doesn't output slack variable
     # So we calculate it explicitely (otherwise just zero)
-    if np.isclose(xsol, 0):
-        return M[0,0] * xsol + q[0]
-    else:
-        return 0
+    x_zero = np.isclose(xsol, 0) 
+    return M[0,0] * xsol + q[0] if x_zero else 0
 
 def dynamics_step(xdot, slack_lambda, pp):
     return xdot + (-pp.g + slack_lambda) * pp.dt

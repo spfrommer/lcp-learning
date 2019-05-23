@@ -36,10 +36,12 @@ def main():
                                    choices=list(sims.SimType))
     parser.add_argument('--path', default='out/data.npy')
     opts = parser.parse_args()
+    
+    dynamics = sims.dynamics_module(opts.simtype)
 
     run_rows = time_steps - 1
     dataset = np.zeros((runs * run_rows,
-                        sims.marshalled_size(opts.simtype)))
+                        dynamics.MARSHALLED_SIZE))
     
     print('Generating {} runs...'.format(runs))
     bar = progressbar.ProgressBar(maxval=runs, \
@@ -55,7 +57,6 @@ def main():
         elif opts.simtype == sims.SimType.SLIDING_DIRECT:
             pp, sp = random_sliding_params()
         
-        dynamics = sims.dynamics_module(opts.simtype)
         sol = dynamics.sim(pp, sp)
         if dynamics.HAS_PROCESSING:
             sol = dynamics.process_solution(sol, pp)
@@ -65,6 +66,6 @@ def main():
 
     bar.finish()
     
-    sims.save_marshalled_data(dataset, opts.path)
+    np.save(opts.path, dataset.astype(np.float32))
 
 if __name__ == "__main__": main()

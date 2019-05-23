@@ -9,7 +9,6 @@ from matplotlib import cm
 
 import torch
 
-from dynamics import SimType
 from sims import *
 
 MAX_POINT_RENDER = 3000
@@ -18,19 +17,13 @@ DATA_MARKER_SIZE = 3
 PRED_MARKER_COLOR = 'red'
 PRED_MARKER_SIZE = 3
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument('--path', default='out/data.npy')
-    parser.add_argument('simtype', type=SimType, choices=list(SimType))
-    opts = parser.parse_args()
+def scatter_data(ax, xs, ys, zs):
+    ax.scatter(xs[:MAX_POINT_RENDER],
+               ys[:MAX_POINT_RENDER],
+               zs[:MAX_POINT_RENDER],
+               c=DATA_MARKER_COLOR, s=DATA_MARKER_SIZE)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    plot_data(ax, opts.path, opts.simtype)
-    add_labels(ax, opts.simtype)
-    plt.show()
-
-def plot_data(ax, path, simtype):
+def plot_data_old(ax, path, simtype):
     if simtype == SimType.FALLING:
         data = load_falling_data(path)
         ax.scatter(data.xs[:MAX_POINT_RENDER],
@@ -60,7 +53,7 @@ def surf_net(ax, net, xrange, yrange, net_process=lambda x:x):
                     grid_z.detach().numpy(),
                     cmap = cm.hot, alpha=0.2)
 
-def data_net(ax, net, states, net_process=lambda x:x):
+def scatter_net(ax, net, states, net_process=lambda x:x):
     zs = net_process(net(states))
     ax.scatter(states[:MAX_POINT_RENDER, 0].detach().numpy(),
                states[:MAX_POINT_RENDER, 1].detach().numpy(),
@@ -70,7 +63,12 @@ def data_net(ax, net, states, net_process=lambda x:x):
     #           states[:MAX_POINT_RENDER, 1].detach().numpy(),
     #           zs[:MAX_POINT_RENDER].detach().numpy())
 
-def add_labels(ax, simtype):
+def add_labels(ax, xlabel, ylabel, zlabel):
+    ax.set_xlabel('x(k)')
+    ax.set_ylabel('xdot(k)')
+    ax.set_zlabel('lambda(k+1)')
+
+def add_labels_old(ax, simtype):
     if simtype == SimType.FALLING:
         ax.set_xlabel('x(k)')
         ax.set_ylabel('xdot(k)')

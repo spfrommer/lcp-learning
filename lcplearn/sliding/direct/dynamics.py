@@ -26,17 +26,13 @@ def lcp(posxdot, negxdot, u, pp):
 def slack_calc(xdotsol, M, q):
     # Solver doesn't output slack variable
     # So we calculate it explicitely
-    if np.isclose(xdotsol[0], 0):
-        # Pos velocity and negative friction are complementary
-        neglambda = np.dot(M[0,:], xdotsol) + q[0]
-    else:
-        neglambda = 0
-
-    if np.isclose(xdotsol[1], 0):
-        # Negative velocity and positive friction are complementary
-        poslambda = np.dot(M[1,:], xdotsol) + q[1]
-    else:
-        poslambda = 0
+    pos_zero = np.isclose(xdotsol[0], 0) 
+    # Pos velocity and negative slack friction are complementary
+    neglambda = np.dot(M[0,:], xdotsol) + q[0] if pos_zero else 0
+    
+    neg_zero = np.isclose(xdotsol[1], 0)
+    # Negative velocity and positive slack friction are complementary
+    poslambda = np.dot(M[1,:], xdotsol) + q[1] if neg_zero else 0
 
     return poslambda, neglambda
 
@@ -46,6 +42,7 @@ def dynamics_step(x, posxdot, negxdot, pp):
 def sim(pp, sp):
     xs = np.zeros((sp.time_steps, 1))
     xs[0] = sp.x0
+    # TODO: formulate these as vectors
     posxdots = np.zeros((sp.time_steps, 1))
     posxdots[0] = sp.xdot0 * (np.sign(sp.xdot0) > 0)
     negxdots = np.zeros((sp.time_steps, 1))
@@ -91,7 +88,6 @@ def marshal_data(ss):
 # numpy array -> sd
 def unmarshal_data(data):
     return SimData(data[:, 0], data[:, 1], data[:, 2], data[:, 3])
-
 
 def main():
     print('Solving sliding sim...')
