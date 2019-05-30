@@ -31,7 +31,7 @@ def main():
 
     pp = dynamics.PhysicsParams(us=None, g=1.0, mu=1.0)
     xdot0 = 0
-    u = 1
+    u = 0.1
 
     def xdotsolver(poslambda, neglambda):
         _, xdot = dynamics.dynamics_step(0, xdot0, poslambda, neglambda, u)
@@ -148,17 +148,19 @@ def compile_noise_results(M, q, xdotsolver, stds, selector):
     # Each row has solution counts for each type of solution type
     soltype_results = np.zeros((stds.size, 4))
     noise_results = np.zeros((stds.size, 2))
+    
+    samples = 200
 
     for i, std in np.ndenumerate(stds):
         i = i[0]
-        for _ in range(1000):
+        for _ in range(samples):
             sol, xdoterr = matrix_noise(M, q, xdotsolver, std, selector)
             soltype_results[i, soltype_lookup.index(str(sol))] += 1
             if xdoterr != None:
                 noise_results[i, 0] += np.absolute(xdoterr)
                 noise_results[i, 1] += 1
     
-    soltype_proportions = soltype_results / 1000.0
+    soltype_proportions = soltype_results / float(samples)
     noise_maes = noise_results[:, 0] / noise_results[:, 1] 
 
     return soltype_proportions, noise_maes[:, None]
