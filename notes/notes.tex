@@ -352,10 +352,12 @@ Then on each iteration of the learning algorithm we would solve an LCP of the fo
 \]
 This would give us the friction forces, from which we could calculate $\dot x_{k+1}$ and then evaluate the same above cost function. This approach has a few issues. First of all, the LCP might not even be solvable. You could try to fix this by imposing some structure on $G$, but this is not that easy. If we forced $G$ to be positive semidefinite, for example by letting $G = \sum _i \phi_i \phi_i^T + \epsilon I$, we wouldn't be able to learn the correct $M$ matrix in the traditional formulation example. The smaller issue is that training time would be dramatically slower because you'd have to solve an LCP on every iteration.
 
-Furthermore, I don't think the traditional way is capable of encoding sticking. If you keep your velocity as a real number, there's no meaningful way of constraining it to be zero in the next time step under sticking. However, if you decompose velocity into positive and negative components, you could potentially RELU the two output velocities to help give you that nonlinear sticking behavior. 
+Furthermore, I don't think the traditional way is capable of encoding sticking. If you keep your velocity as a real number, there's no meaningful way of constraining it to be zero in the next time step under sticking. However, if you decompose velocity into positive and negative components, you could potentially RELU the two output velocities to help give you that nonlinear sticking behavior.
+
+One interesting question might be, given some error in $\vec{f}$ and $G$, can we still observe sticking in the resulting LCP? I looked at this in \textit{lcp\_study.py}. There end up being two important cases. When $u_{k+1}$ and $v_k$ are both zero, sticking is possible, and happens $25\%$ of the time regardless of the magnitude of the noise; this occurs exactly when the first two elements of $q$ are nonnegative, and $M$ does not matter at all. In this case all zeros trivially satisfies the LCP and this happens to give the correct sticking behavior. However, as soon as one of $u_{k+1}$ or $v_k$ are nonnegative, we need an exact force output from the LCP to bring the velocity to zero; this happens basically never (~$0.1\%$ of cases) regardless of the amount of noise and hence we can't rely on the learned LCP giving correct sticking behavior.
 
 \subsection{Unknown frictional forces}
-What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities.
+What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. The question is how do we make the LCP solvable
 
 Experiment with modulating LCP 
 \end{document}

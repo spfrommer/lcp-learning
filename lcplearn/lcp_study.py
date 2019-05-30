@@ -174,9 +174,6 @@ def matrix_noise(M, q, xdotsolver, std, selector):
         Mprime = M + np.random.normal(0, std, M.shape)
     if selector in (Selector.Q, Selector.BOTH):
         qprime = q + np.random.normal(0, std, q.shape)
-    
-    #if std > 0 and selector == Selector.Q:
-    #    pdb.set_trace()
 
     return compare_solution(Mprime, qprime, xdotsolver, sol)
 
