@@ -12,13 +12,10 @@ from lcplearn import lcp_utils
 PhysicsParams = namedtuple('sliding_physics_params', 'us g mu')
 SimParams = namedtuple('sliding_sim_params', 'x0 xdot0 time_steps')
 SimSolution = namedtuple('sliding_solution', 'xs, xdots, poslambdas, neglambdas, gammas, us')
-# xdots and lambdas are signed and lambdas represent actual friction forces
-SimSolutionProcessed = namedtuple('sliding_solution_processed', 'xs, xdots, lambdas, gammas, us')
-SimData = namedtuple('falling_data', 'xdots, us, lambdas, gammas, next_xdots')
-# TODO: add full sim data
+SimData = namedtuple('falling_data', 'xdots, us, poslambdas, neglambdas, gammas, next_xdots')
 
-MARSHALLED_SIZE = 5
-HAS_PROCESSING = True
+MARSHALLED_SIZE = 6
+HAS_PROCESSING = False
 
 def lcp(xdot, u, pp):
     M = np.array([[1, -1, 1], [-1, 1, 1], [-1, -1, 0]])
@@ -53,7 +50,7 @@ def sim(pp, sp):
                 poslambdas[t+1], neglambdas[t+1], pp.us[t+1])
     
     return SimSolution(xs, xdots, poslambdas, neglambdas, \
-                       gammas, np.expand_dims(pp.us, 1))
+                       gammas, pp.us)
 
 def process_solution(ss, pp):
     lambdas = ss.poslambdas - ss.neglambdas
@@ -62,11 +59,13 @@ def process_solution(ss, pp):
 # Lines up data for machine learning
 def marshal_data(ss):
     return np.hstack((ss.xdots[:-1], ss.us[1:],
-                      ss.lambdas[1:], ss.xdots[1:]))
+                      ss.poslambdas[1:], ss.neglambdas[1:],
+                      ss.gammas[1:], ss.xdots[1:]))
 
 # numpy array -> sd
 def unmarshal_data(data):
-    return SimData(data[:, 0], data[:, 1], data[:, 2], data[:, 3])
+    return SimData(data[:, 0], data[:, 1], data[:, 2], 
+                   data[:, 3], data[:, 4], data[:, 5])
 
 def main():
     print('Solving sliding sim...')
@@ -78,9 +77,3 @@ def main():
     print(np.hstack((sol.xs, sol.xdots, 
                      sol.poslambdas, sol.neglambdas,
                      sol.gammas, sol.us)))
-    sol_processed = process_solution(sol, pp)
-    print('Processed output (ignore first lambda): ')
-    print('x, xdot, lambda, gamma, u')
-    print(np.hstack((sol_processed.xs, sol_processed.xdots,
-                     sol_processed.lambdas, sol_processed.gammas,
-                     sol_processed.us)))

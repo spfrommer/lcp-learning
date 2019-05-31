@@ -13,6 +13,7 @@ class SimType(Enum):
 class ModelType(Enum):
     FALLING = 'falling'
     SLIDING_DIRECT = 'sliding_direct'
+    SLIDING_TRADITIONAL = 'sliding_traditional'
 
     def __str__(self):
         return self.value
@@ -32,19 +33,23 @@ def dynamics_module(simtype):
 def model_module(modeltype):
     import falling.model as FallingModel
     import sliding.direct.model as SlidingDirectModel
+    import sliding.traditional.model as SlidingTraditionalModel
 
     if modeltype == ModelType.FALLING:
         return FallingModel
     elif modeltype == ModelType.SLIDING_DIRECT:
         return SlidingDirectModel
+    elif modeltype == ModelType.SLIDING_TRADITIONAL:
+        return SlidingTraditionalModel
 
 def analyze_module(modeltype):
     import falling.analyze as FallingAnalyze
     import sliding.direct.analyze as SlidingDirectAnalyze
+    import sliding.traditional.analyze as SlidingTraditionalAnalyze
 
     if modeltype == ModelType.FALLING:
         return FallingAnalyze
     elif modeltype == ModelType.SLIDING_DIRECT:
         return SlidingDirectAnalyze
-
-
+    elif modeltype == ModelType.SLIDING_TRADITIONAL:
+        return SlidingTraditionalAnalyze

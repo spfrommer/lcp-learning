@@ -8,7 +8,7 @@ from . import dynamics
 
 def analyze(net, opts):
     handle_print(net)
-    handle_vis(net, opts)
+    #handle_vis(net, opts)
 
 def handle_vis(net, opts):
     states, ys, data = model.load_data(opts.datapath)
@@ -26,9 +26,11 @@ def handle_vis(net, opts):
     plt.show()
 
 def handle_print(net):
-    print('f:')
+    print('f weights:')
     print(net.f.weight)
+    print('f biases:')
     print(net.f.bias)
-    print('G:')
+    print('G weights:')
     print(net.G.weight)
+    print('G biases:')
     print(net.G.bias)

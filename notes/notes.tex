@@ -329,12 +329,40 @@ Now assume that we know the slack friction forces vector $\vec{\lambda'} = \rvec
 \end{remark}
 
 \begin{remark}
-    I think going about this by penalizing LCP violations is not the right path forward. Instead, we should be using the fact that velocities are decomposed to help enforce sticking. More specifically, we should probably relu the output to allow totally zero velocities to be produced.
+    I think going about this by penalizing LCP violations is not the right path forward. Instead, we should be using the fact that velocities are decomposed to help enforce sticking. More specifically, we should probably relu the output to allow totally zero velocities to be produced. Update: this works! But unless we can formulate velocity in this complementary framework doesn't really generalize well.
 \end{remark}
 
 \begin{remark}
     When considering $\vec{f}$ and $G$, you need to let them be linear maps with biases because there are bias terms in the actual system. 
 \end{remark}
+
+\subsubsection{Traditional formulation}
+Assume we know the decision variables of the LCP:
+\[
+    \vec{\lambda}_{k+1} =
+    \begin{bmatrix}
+        \lambda^+_{k+1} \\
+        \lambda^-_{k+1} \\
+        \gamma_{k+1}
+    \end{bmatrix}
+\]
+We want to find an $\vec{f}$ and $G$ such that the following equation is always satisfied:
+\[
+    0 \leq \vec{\lambda}_{k+1} \perp \vec{f}(\dot x_k, u_{k+1}) + G(\dot x_k, u_{k+1}) \vec{\lambda}_{k+1} \geq 0
+\]
+We can penalize violations as follows:
+\[
+    c = \alpha_1 \norm{\vec{\lambda}_{k+1} \odot (\vec{f}(\dot x_k, u_{k+1}) + G(\dot x_k, u_{k+1}) \vec{\lambda}_{k+1})} + \alpha_2 \norm{\max \left(0, -\vec{f}(\dot x_k, u_{k+1}) - G(\dot x_k, u_{k+1}) \vec{\lambda}_{k+1}\right)}_1
+\] 
+Observe that the trivial solution is $\vec{f} = 0$ and $G = 0$. Therefore we know that it's not enough just to penalize complementarity/nonnegativity constraints; we need to impose more structure. Note that $\vec{f}$ and $G$ are invariant to scaling; we can therefore just fix the first element of $G$ equal to one, for example. We could also experiment with imposing the following structure on $M$:
+\[
+    M = \sum_i \phi_i \phi_i^T + \sum_i \alpha_i \Phi_i^+ + \sum_i \beta_i \Phi_i^{asym}
+\]
+
+Finally, we should train an additional model for $\dot x_{k+1} = h(\dot x_k, u_{k+1})$.
+
+\subsection{Unknown frictional forces}
+What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. Under the traditional framework, we would learn $\vec{f}$ and $G$, use those to solve for the friction forces, then calculate $\dot x_{k+1}$ from there. The issue here is, can we predict sticking and sliding if there is noise on $\vec{f}$ and $G$? I looked at this in \textit{lcp\_study.py}. It turns out if only single elements of $M$ and $\vec{q}$ are perturbed, the solution is usually stable (sticking is observed). However, as soon as we add random noise, this breaks down. When $u=0$ we sometimes coincidentally get the right answer if all the $\vec{q}$ elems are strictly positive (gives zero friction forces as trivial solution). However, as soon as $u \neq 0$, we need a precise nonzero friction force equal to $-u$ to induce sticking. Random noise makes this impossible.
 
 \subsubsection{Traditional formulation}
 Following the traditional formulation of the LCP we can let our decision variables be:
@@ -354,10 +382,9 @@ This would give us the friction forces, from which we could calculate $\dot x_{k
 
 Furthermore, I don't think the traditional way is capable of encoding sticking. If you keep your velocity as a real number, there's no meaningful way of constraining it to be zero in the next time step under sticking. However, if you decompose velocity into positive and negative components, you could potentially RELU the two output velocities to help give you that nonlinear sticking behavior.
 
-One interesting question might be, given some error in $\vec{f}$ and $G$, can we still observe sticking in the resulting LCP? I looked at this in \textit{lcp\_study.py}. There end up being two important cases. When $u_{k+1}$ and $v_k$ are both zero, sticking is possible, and happens $25\%$ of the time regardless of the magnitude of the noise; this occurs exactly when the first two elements of $q$ are nonnegative, and $M$ does not matter at all. In this case all zeros trivially satisfies the LCP and this happens to give the correct sticking behavior. However, as soon as one of $u_{k+1}$ or $v_k$ are nonnegative, we need an exact force output from the LCP to bring the velocity to zero; this happens basically never (~$0.1\%$ of cases) regardless of the amount of noise and hence we can't rely on the learned LCP giving correct sticking behavior.
-
-\subsection{Unknown frictional forces}
-What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. The question is how do we make the LCP solvable
-
-Experiment with modulating LCP 
+\section{Random ideas}
+\begin{itemize}
+    \item Markov random field / Markov chain for state transitions. Captures multimodality. However, continuous and multidimensional state space is an issue. Could potentially use stick/slip/detach as states instead.
+    \item Generalizing direct formulation to non-full-rank jacobian scenarios
+\end{itemize}
 \end{document}

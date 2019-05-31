@@ -22,7 +22,7 @@ def load_data(path):
 def learning_setup():
     model = StructuredNet()
     loss = structured_loss
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     return model, loss, optimizer
 
 def structured_loss(next_xdots_pred, next_xdots, states):

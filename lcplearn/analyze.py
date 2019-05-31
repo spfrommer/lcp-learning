@@ -13,7 +13,7 @@ def main():
     parser.add_argument('--datapath', default='out/data.npy')
     parser.add_argument('--netpath', default='out/model.pt')
     parser.add_argument('--learntype', default='pytorch',
-                        choices=list('pytorch', 'custom'))
+                        choices=['pytorch', 'custom'])
     parser.add_argument('modeltype', type=sims.ModelType,
                                      choices=list(sims.ModelType))
     opts = parser.parse_args()

@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import logging
 import numpy as np
 import numpy.random as rand
@@ -8,6 +11,7 @@ import progressbar
 
 import falling.dynamics as FallingDynamics
 import sliding.direct.dynamics as SlidingDirectDynamics
+import sliding.traditional.dynamics as SlidingTraditionalDynamics
 import sims
 
 g = 1.0
@@ -19,15 +23,22 @@ runs = 1000
 def random_falling_params():
     pp = FallingDynamics.PhysicsParams(g=g, dt=dt)
     sp = FallingDynamics.SimParams(
-                         x0=rand.uniform(0,20), xdot0=rand.uniform(-5,5),
-                         lambda0=0.0,           time_steps=time_steps)
+                        x0=rand.uniform(0,20), xdot0=rand.uniform(-5,5),
+                        lambda0=0.0,           time_steps=time_steps)
     return pp, sp
 
-def random_sliding_params(): 
+def random_sliding_direct_params(): 
     pp = SlidingDirectDynamics.PhysicsParams(
-            us=rand.uniform(-3,3,size=(time_steps, 1)), g=g, mu=1, dt=dt)
+        us=rand.uniform(-3,3,size=(time_steps, 1)), g=g, mu=1, dt=dt)
     sp = SlidingDirectDynamics.SimParams(time_steps=time_steps,
-            x0=rand.uniform(-5,5), xdot0=rand.uniform(-5,5))
+        x0=rand.uniform(-5,5), xdot0=rand.uniform(-5,5))
+    return pp, sp
+
+def random_sliding_traditional_params(): 
+    pp = SlidingTraditionalDynamics.PhysicsParams(
+        us=rand.uniform(-3,3,size=(time_steps, 1)), g=g, mu=1)
+    sp = SlidingTraditionalDynamics.SimParams(time_steps=time_steps,
+        x0=rand.uniform(-5,5), xdot0=rand.uniform(-5,5))
     return pp, sp
 
 def main():
@@ -55,8 +66,10 @@ def main():
         if opts.simtype == sims.SimType.FALLING:
             pp, sp = random_falling_params()
         elif opts.simtype == sims.SimType.SLIDING_DIRECT:
-            pp, sp = random_sliding_params()
-        
+            pp, sp = random_sliding_direct_params()
+        elif opts.simtype == sims.SimType.SLIDING_TRADITIONAL:
+            pp, sp = random_sliding_traditional_params()
+
         sol = dynamics.sim(pp, sp)
         if dynamics.HAS_PROCESSING:
             sol = dynamics.process_solution(sol, pp)
@@ -66,6 +79,6 @@ def main():
 
     bar.finish()
     
-    np.save(opts.path, dataset.astype(np.float32))
+    np.save(opts.path, dataset.astype(np.double))
 
 if __name__ == "__main__": main()

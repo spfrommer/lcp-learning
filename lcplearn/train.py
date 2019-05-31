@@ -9,15 +9,15 @@ from torch.utils.data import TensorDataset, DataLoader
 
 import sims
 
-EPOCHS = 50
-BATCH_SIZE = 10000
+EPOCHS = 1
+BATCH_SIZE = 1
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--datapath', default='out/data.npy')
     parser.add_argument('--modelpath', default='out/model.pt')
     parser.add_argument('--learntype', default='pytorch',
-                        choices=list('pytorch', 'custom'))
+                        choices=['pytorch', 'custom'])
     parser.add_argument('modeltype', type=sims.ModelType,
                                      choices=list(sims.ModelType))
     opts = parser.parse_args()
@@ -31,6 +31,7 @@ def main():
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
         for epoch in range(EPOCHS):
+            print("On epoch: {}".format(epoch))
             for batch in dataloader:
                 states_batch, ys_batch = batch
                 
