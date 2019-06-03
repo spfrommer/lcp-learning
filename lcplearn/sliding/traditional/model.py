@@ -28,15 +28,17 @@ def learning_setup():
                     [70, 150, 250], gamma=0.3)
     return model, loss, optimizer, scheduler
 
-def structured_loss(net_out, next_xdots, states):
+def structured_loss(net_out, next_xdots, states, net):
     lcp_slack = net_out
     lambdas = states[:, 2:5]
 
     comp_term = torch.norm(lambdas * lcp_slack, 2)
+
     zeros = torch.zeros(lcp_slack.shape).double().to(lcp_slack.device)
     nonneg_term = torch.norm(torch.max(zeros, -lcp_slack), 2)
+
     magnitude_term = torch.norm(lcp_slack.reshape(1, -1).squeeze(), 2)
-    
+
     w = torch.tensor([0, 0, 1]).to(net_out.device)
     loss = w[0] * comp_term + w[1] * nonneg_term + w[2] * magnitude_term
 

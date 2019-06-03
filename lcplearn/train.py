@@ -41,7 +41,7 @@ def main():
         print("Dataset size: {}".format(len(dataset)))
         print("Batch size: {}".format(BATCH_SIZE))
 
-        train_loss = loss_func(net(states), ys, states).data.item()
+        train_loss = loss_func(net(states), ys, states, net).data.item()
         print('Starting loss: {}'.format(train_loss))
 
         for epoch in range(EPOCHS):
@@ -52,18 +52,18 @@ def main():
                 states_batch, ys_batch = batch
                 
                 ys_pred = net(states_batch)
-                loss = loss_func(ys_pred, ys_batch, states_batch)
+                loss = loss_func(ys_pred, ys_batch, states_batch, net)
                 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-            train_loss = loss_func(net(states), ys, states).data.item()
+            train_loss = loss_func(net(states), ys, states, net).data.item()
             print('Finished epoch {} with loss: {}'.format(epoch, train_loss))
 
             torch.save(net.state_dict(), opts.modelpath)
 
-        train_loss = loss_func(net(states), ys, states).data.item()
+        train_loss = loss_func(net(states), ys, states, net).data.item()
         print('Finished training with loss: {}'.format(train_loss))
         torch.save(net.state_dict(), opts.modelpath)
     elif opts.learntype == 'custom':

@@ -16,16 +16,16 @@ def load_data(path):
     ys = lcp_utils.split_sign(torch.from_numpy(data.next_xdots),
                     pos_first=True)
 
-    states, ys = Variable(states), Variable(ys)
+    states, ys = Variable(states.float()), Variable(ys.float())
     return states, ys, data
 
 def learning_setup():
     model = StructuredNet()
     loss = structured_loss
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    return model, loss, optimizer
+    return model, loss, optimizer, None
 
-def structured_loss(next_xdots_pred, next_xdots, states):
+def structured_loss(next_xdots_pred, next_xdots, states, _):
     lambdas = lcp_utils.split_sign(states[:, 2], pos_first=True)
     
     err_term = torch.norm(next_xdots_pred - next_xdots, 2)
