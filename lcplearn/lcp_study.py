@@ -31,7 +31,7 @@ def main():
 
     pp = dynamics.PhysicsParams(us=None, g=1.0, mu=1.0)
     xdot0 = 0
-    u = 0.1
+    u = 0
 
     def xdotsolver(poslambda, neglambda):
         _, xdot = dynamics.dynamics_step(0, xdot0, poslambda, neglambda, u)

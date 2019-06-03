@@ -9,7 +9,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 import sims
 
-EPOCHS = 1
+EPOCHS = 10
 BATCH_SIZE = 1
 
 def main():
@@ -29,6 +29,8 @@ def main():
         states, ys, _ = model.load_data(opts.datapath)
         dataset = TensorDataset(states, ys)
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+        
+        print("Batch size: {}".format(BATCH_SIZE))
 
         for epoch in range(EPOCHS):
             print("On epoch: {}".format(epoch))
@@ -41,6 +43,9 @@ def main():
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+
+            train_loss = loss_func(net(states), ys, states).data.numpy()
+            print('Finished epoch with loss: {}'.format(train_loss.item()))
 
         train_loss = loss_func(net(states), ys, states).data.numpy()
 

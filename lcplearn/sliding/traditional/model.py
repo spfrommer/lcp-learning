@@ -23,7 +23,8 @@ def load_data(path):
 def learning_setup():
     model = StructuredNet()
     loss = structured_loss
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.000001)
+    #optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.9)
     return model, loss, optimizer
 
 def structured_loss(net_out, next_xdots, states):
@@ -38,8 +39,7 @@ def structured_loss(net_out, next_xdots, states):
     w = torch.tensor([1, 0, 0])
     loss = w[0] * comp_term + w[1] * nonneg_term + w[2] * magnitude_term
     
-    if loss > 0:
-        pdb.set_trace()
+    #if loss > 0: pdb.set_trace()
     return loss
 
 class StructuredNet(torch.nn.Module):
@@ -59,14 +59,22 @@ class StructuredNet(torch.nn.Module):
 
         # Correct dynamics solution
         self.G.weight.data.fill_(0)
-        self.G.bias = Parameter(torch.tensor([1, -1, 1,
-                                             -1,  1, 1,
-                                             -1, -1, 0]).double())
-        self.f.weight = Parameter(torch.tensor([[1,  1],
-                                               [-1, -1],
-                                                [0,  0]]).double())
+        self.G.weight.data = self.add_noise(self.G.weight.data)
+        self.G.bias = Parameter(self.add_noise(
+                torch.tensor([1, -1, 1,
+                             -1,  1, 1,
+                             -1, -1, 0]).double()))
+        self.f.weight = Parameter(self.add_noise(
+                torch.tensor([[1,  1],
+                             [-1, -1],
+                              [0,  0]]).double()))
         # 1 = mu * m * g
-        self.f.bias = Parameter(torch.tensor([0, 0, 1]).double())
+        self.f.bias = Parameter(self.add_noise(
+                torch.tensor([0, 0, 1]).double()))
+    
+    def add_noise(self, tensor):
+        m = torch.distributions.normal.Normal(0, 0.1)
+        return tensor + m.sample(tensor.shape).double()
 
     def forward(self, states):
         lambdas = states[:, 2:5]
