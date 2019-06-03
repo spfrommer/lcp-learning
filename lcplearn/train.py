@@ -9,8 +9,11 @@ from torch.utils.data import TensorDataset, DataLoader
 
 import sims
 
-EPOCHS = 10
-BATCH_SIZE = 1
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = "cpu"
+
+EPOCHS = 800
+BATCH_SIZE = 32
 
 def main():
     parser = ArgumentParser()
@@ -24,16 +27,27 @@ def main():
     
     if opts.learntype == 'pytorch':
         model = sims.model_module(opts.modeltype)
-        net, loss_func, optimizer = model.learning_setup()
+        net, loss_func, optimizer, scheduler = model.learning_setup()
+        net = net.to(device)
 
         states, ys, _ = model.load_data(opts.datapath)
+        states = states.to(device)
+        ys = ys.to(device)
+
         dataset = TensorDataset(states, ys)
         dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
         
+        print("Using device: {}".format(device))
+        print("Dataset size: {}".format(len(dataset)))
         print("Batch size: {}".format(BATCH_SIZE))
 
+        train_loss = loss_func(net(states), ys, states).data.item()
+        print('Starting loss: {}'.format(train_loss))
+
         for epoch in range(EPOCHS):
-            print("On epoch: {}".format(epoch))
+            if not scheduler is None:
+                scheduler.step()
+
             for batch in dataloader:
                 states_batch, ys_batch = batch
                 
@@ -44,12 +58,13 @@ def main():
                 loss.backward()
                 optimizer.step()
 
-            train_loss = loss_func(net(states), ys, states).data.numpy()
-            print('Finished epoch with loss: {}'.format(train_loss.item()))
+            train_loss = loss_func(net(states), ys, states).data.item()
+            print('Finished epoch {} with loss: {}'.format(epoch, train_loss))
 
-        train_loss = loss_func(net(states), ys, states).data.numpy()
+            torch.save(net.state_dict(), opts.modelpath)
 
-        print('Finished training with loss: {}'.format(train_loss.item()))
+        train_loss = loss_func(net(states), ys, states).data.item()
+        print('Finished training with loss: {}'.format(train_loss))
         torch.save(net.state_dict(), opts.modelpath)
     elif opts.learntype == 'custom':
         print('No custom support')

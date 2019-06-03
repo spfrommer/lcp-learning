@@ -19,7 +19,7 @@ HAS_PROCESSING = False
 
 def lcp(xdot, u, pp):
     M = np.array([[1, -1, 1], [-1, 1, 1], [-1, -1, 0]])
-    q = np.array([xdot + u, -xdot -u, pp.g * pp.mu])
+    q = np.array([xdot + u, -xdot - u, pp.g * pp.mu])
     return M, q
 
 def dynamics_step(x, xdot, poslambda, neglambda, u):

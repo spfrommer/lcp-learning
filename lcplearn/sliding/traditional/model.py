@@ -21,56 +21,60 @@ def load_data(path):
     return states, ys, data
 
 def learning_setup():
-    model = StructuredNet()
+    model = StructuredNet(False)
     loss = structured_loss
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.000001)
-    #optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.9)
-    return model, loss, optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
+                    [70, 150, 250], gamma=0.3)
+    return model, loss, optimizer, scheduler
 
 def structured_loss(net_out, next_xdots, states):
     lcp_slack = net_out
     lambdas = states[:, 2:5]
 
     comp_term = torch.norm(lambdas * lcp_slack, 2)
-    nonneg_term = torch.norm(torch.max(
-        torch.zeros(lcp_slack.shape).double(), -lcp_slack), 2)
+    zeros = torch.zeros(lcp_slack.shape).double().to(lcp_slack.device)
+    nonneg_term = torch.norm(torch.max(zeros, -lcp_slack), 2)
     magnitude_term = torch.norm(lcp_slack.reshape(1, -1).squeeze(), 2)
     
-    w = torch.tensor([1, 0, 0])
+    w = torch.tensor([0, 0, 1]).to(net_out.device)
     loss = w[0] * comp_term + w[1] * nonneg_term + w[2] * magnitude_term
-    
-    #if loss > 0: pdb.set_trace()
+
     return loss
 
+def soft_max(x, y):
+    return torch.log(torch.exp(x) + torch.exp(y))
+
 class StructuredNet(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, warm_start):
         super(StructuredNet, self).__init__()
         self.f = torch.nn.Linear(2, 3, bias=True).double()
         self.G = torch.nn.Linear(2, 9, bias=True).double()
 
-        #torch.nn.init.xavier_uniform_(self.f.weight)
-        #torch.nn.init.xavier_uniform_(self.G.weight)
-        
+        # Correct dynamics solution
+        if warm_start:
+            self.G.weight.data.fill_(0)
+            self.G.weight.data = self.add_noise(self.G.weight.data)
+            self.G.bias = Parameter(self.add_noise(
+                    torch.tensor([1, -1, 1,
+                                 -1,  1, 1,
+                                 -1, -1, 0]).double()))
+            self.f.weight = Parameter(self.add_noise(
+                    torch.tensor([[1,  1],
+                                 [-1, -1],
+                                  [0,  0]]).double()))
+            # 1 = mu * m * g
+            self.f.bias = Parameter(self.add_noise(
+                    torch.tensor([0, 0, 1]).double()))
+        else:
+            torch.nn.init.xavier_uniform_(self.f.weight)
+            torch.nn.init.xavier_uniform_(self.G.weight)
+
         # Trivial solution
         #self.f.weight.data.fill_(0)
         #self.f.bias.data.fill_(0)
         #self.G.weight.data.fill_(0)
         #self.G.bias.data.fill_(0)
-
-        # Correct dynamics solution
-        self.G.weight.data.fill_(0)
-        self.G.weight.data = self.add_noise(self.G.weight.data)
-        self.G.bias = Parameter(self.add_noise(
-                torch.tensor([1, -1, 1,
-                             -1,  1, 1,
-                             -1, -1, 0]).double()))
-        self.f.weight = Parameter(self.add_noise(
-                torch.tensor([[1,  1],
-                             [-1, -1],
-                              [0,  0]]).double()))
-        # 1 = mu * m * g
-        self.f.bias = Parameter(self.add_noise(
-                torch.tensor([0, 0, 1]).double()))
     
     def add_noise(self, tensor):
         m = torch.distributions.normal.Normal(0, 0.1)
@@ -82,7 +86,7 @@ class StructuredNet(torch.nn.Module):
         fxu = self.f(xus)
         Gxu = self.G(xus).view(-1, 3, 3)
         lcp_slack = fxu + torch.bmm(Gxu,lambdas.unsqueeze(2)).squeeze(2)
-    
+        
         return lcp_slack
 
 if __name__ == "__main__": main()

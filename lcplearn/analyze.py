@@ -22,7 +22,7 @@ def main():
         analyze = sims.analyze_module(opts.modeltype)
         model = sims.model_module(opts.modeltype)
 
-        net, _, _ = model.learning_setup()
+        net, _, _, _ = model.learning_setup()
         net.load_state_dict(torch.load(opts.netpath))
         net.eval()
 
