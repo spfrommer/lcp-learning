@@ -17,16 +17,18 @@ def load_data(path):
     ys = torch.from_numpy(data.lambdas)
     ys = ys.view(-1, 1)
 
-    states, ys = Variable(states), Variable(ys)
+    states, ys = Variable(states.float()), Variable(ys.float())
     return states, ys, data
 
 def learning_setup():
     model = StandardNet(n_feature=2,
                         n_hidden=5, n_output=1)
     # Add dummy arg to match function signature
-    loss = lambda ys_p,ys,states: torch.nn.MSELoss().forward(ys_p, ys)
+    loss = lambda ys_p,ys,states,net: torch.nn.MSELoss().forward(ys_p, ys)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.2)
-    return model, loss, optimizer
+    return model, loss, optimizer, None
+
+
 
 class StandardNet(torch.nn.Module):
     def __init__(self, n_feature, n_hidden, n_output):

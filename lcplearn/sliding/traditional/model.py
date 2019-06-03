@@ -25,7 +25,7 @@ def learning_setup():
     loss = structured_loss
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
-                    [70, 150, 250], gamma=0.3)
+                    [90, 150, 250], gamma=0.3)
     return model, loss, optimizer, scheduler
 
 def structured_loss(net_out, next_xdots, states, net):
@@ -33,14 +33,16 @@ def structured_loss(net_out, next_xdots, states, net):
     lambdas = states[:, 2:5]
 
     comp_term = torch.norm(lambdas * lcp_slack, 2)
+    nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
 
-    zeros = torch.zeros(lcp_slack.shape).double().to(lcp_slack.device)
-    nonneg_term = torch.norm(torch.max(zeros, -lcp_slack), 2)
+    constraints = [(1, net.G.bias[0]), (1, net.G.bias[4]),
+                   (0, net.G.bias[8]), (1, net.f.weight[0,0]),
+                   (-1, net.f.weight[1,0]), (1, net.f.bias[2]),
+                   (0, net.f.weight[2,0])]
 
-    magnitude_term = torch.norm(lcp_slack.reshape(1, -1).squeeze(), 2)
-
-    w = torch.tensor([0, 0, 1]).to(net_out.device)
-    loss = w[0] * comp_term + w[1] * nonneg_term + w[2] * magnitude_term
+    loss = 1 * comp_term + 1 * nonneg_term 
+    for c in constraints:
+        loss = loss + 50 * torch.norm(c[0] - c[1], 2)
 
     return loss
 
