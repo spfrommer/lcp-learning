@@ -79,6 +79,6 @@ def main():
 
     bar.finish()
     
-    np.save(opts.path, dataset.astype(np.double))
+    np.save(opts.path, dataset.astype(np.float32))
 
 if __name__ == "__main__": main()

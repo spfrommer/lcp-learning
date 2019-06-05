@@ -5,6 +5,7 @@ import numpy as np
 from collections import namedtuple
 from enum import Enum
 from argparse import ArgumentParser
+import matplotlib.pyplot as plt
 import pdb
 
 import lemkelcp
@@ -29,9 +30,9 @@ def main():
 
     dynamics = sims.dynamics_module(sims.SimType.SLIDING_TRADITIONAL)
 
-    pp = dynamics.PhysicsParams(us=None, g=1.0, mu=1.0)
+    pp = dynamics.PhysicsParams(us=None, g=1.0, mu=2.0)
     xdot0 = 0
-    u = 0
+    u = 1
 
     def xdotsolver(poslambda, neglambda):
         _, xdot = dynamics.dynamics_step(0, xdot0, poslambda, neglambda, u)
@@ -125,31 +126,46 @@ def matrix_noise_study(M, q, xdotsolver):
     soltype_results_M, noise_results_M = \
         compile_noise_results(M, q, xdotsolver, stds, Selector.M)
     print("=============== Noise on M ===============")
-    print_results(soltype_results_M, noise_results_M)
+    output_results(soltype_results_M, noise_results_M, stds)
+    plt.suptitle('Noise on M')
 
     print("=============== Noise on q ===============")
     soltype_results_q, noise_results_q = \
         compile_noise_results(M, q, xdotsolver, stds, Selector.Q)
-    print_results(soltype_results_q, noise_results_q)
+    output_results(soltype_results_q, noise_results_q, stds)
+    plt.suptitle('Noise on q')
 
     print("=============== Noise on both ===============")
     soltype_results_both, noise_results_both = \
         compile_noise_results(M, q, xdotsolver, stds, Selector.BOTH)
-    print_results(soltype_results_both, noise_results_both)
+    output_results(soltype_results_both, noise_results_both, stds)
+    plt.suptitle('Noise on both')
 
-def print_results(soltype_results, noise_results):
+    plt.show()
+
+def output_results(soltype_results, noise_results, stds):
     print("===== Solution proportions =====")
     print("Unsolvable, same xdot, same lambda, different xdot")
     print(soltype_results)
     print("===== Mean xdot errors =====")
     print(noise_results)
+    
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False)
+    ax1.stackplot(stds, soltype_results.transpose(), labels=['U','X','L','D'])
+    ax1.legend(loc='upper left')
+    ax1.set_xlabel('Standard deviation')
+    
+    ax2.plot(stds, noise_results)
+    ax2.set_ylabel('Xdot error')
+    ax2.set_xlabel('Standard deviation')
+    ax2.grid()
 
 def compile_noise_results(M, q, xdotsolver, stds, selector):
     # Each row has solution counts for each type of solution type
     soltype_results = np.zeros((stds.size, 4))
     noise_results = np.zeros((stds.size, 2))
     
-    samples = 200
+    samples = 1000
 
     for i, std in np.ndenumerate(stds):
         i = i[0]

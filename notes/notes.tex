@@ -257,6 +257,62 @@ In this case I believe $M$ is a P-matrix and Lemke's algorithm is guaranteed to 
     Matt says P and Q matrices are useless. Didn't quite understand why but apparently we can't really use them effectively.
 \end{note}
 
+\subsubsection{As Mixed LCP}
+Usually LCP formulations don't go through the trouble of subbing $v_{k+1}$ back in. It then looks something like the following:
+\[
+    \begin{bmatrix}
+        1 & 1 & -1 & 0 \\
+        1 & 0 & 0 & 1\\
+        -1 & 0 & 0 & 1 \\
+        0 & -1 & -1 & 0
+    \end{bmatrix}
+    \begin{bmatrix}
+        v_{k+1} \\
+        \lambda^+_{k+1} \\
+        \lambda^-_{k+1} \\
+        \gamma_{k+1}
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        v_k + u_{k+1} \\
+        0 \\
+        0 \\
+        m g \mu
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 \\
+        w_1 \\
+        w_2 \\
+        w_3 \\
+    \end{bmatrix}
+\]
+\[
+    0 \leq 
+    \begin{bmatrix}
+        \lambda^+_{k+1} \\
+        \lambda^-_{k+1} \\
+        \gamma_{k+1}
+    \end{bmatrix}, \quad
+    0 \leq 
+    \begin{bmatrix}
+        w_1 \\
+        w_2 \\
+        w_3
+    \end{bmatrix}, \quad
+    \begin{bmatrix}
+        \lambda^+_{k+1} \\
+        \lambda^-_{k+1} \\
+        \gamma_{k+1}
+    \end{bmatrix}
+    \begin{bmatrix}
+        w_1 \\
+        w_2 \\
+        w_3
+    \end{bmatrix}
+    = 0
+\]
+
 \section{Learning}
 We want to ultimately learn the dynamics for a full Kuka arm interacting with an object, but we start with just the sliding block example. The most obvious idea is to learn the unknown friction force $\lambda = f(\dot x, u)$ by fitting a neural network or some other function approximator to the raw data. However, this approach won't be able to properly capture sticking behavior. We need some way of embedding the complementary nature of the problem into our learning algorithm. 
 
@@ -365,7 +421,7 @@ Finally, we should train an additional model for $\dot x_{k+1} = h(\dot x_k, u_{
 What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. Under the traditional framework, we would learn $\vec{f}$ and $G$, use those to solve for the friction forces, then calculate $\dot x_{k+1}$ from there. The issue here is, can we predict sticking and sliding if there is noise on $\vec{f}$ and $G$? I looked at this in \textit{lcp\_study.py}. It turns out if only single elements of $M$ and $\vec{q}$ are perturbed, the solution is usually stable (sticking is observed). However, as soon as we add random noise, this breaks down. When $u=0$ we sometimes coincidentally get the right answer if all the $\vec{q}$ elems are strictly positive (gives zero friction forces as trivial solution). However, as soon as $u \neq 0$, we need a precise nonzero friction force equal to $-u$ to induce sticking. Random noise makes this impossible. Let's look at one particular case more analytically:
 
 \subsubsection{Small $\vec{q}$ error}
-Let's start from our original traditional formulation equations, including a small error $\epsilon > 0$ in $\vec{q}$:
+Let's start from our original traditional formulation equations, assuming $v_k = 0$ and $u_{k+1} = 0$, and including a small error $\epsilon > 0$ in $\vec{q}$:
 \begin{align*}
     0 \leq \lambda^+_{k+1} &\perp \gamma_{k+1} + v_{k+1} - \epsilon \geq 0\\
     0 \leq \lambda^-_{k+1} &\perp \gamma_{k+1} - v_{k+1} \geq 0\\
