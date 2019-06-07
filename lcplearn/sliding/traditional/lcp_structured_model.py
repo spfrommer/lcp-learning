@@ -21,15 +21,9 @@ def load_data(path):
     return states, ys, data
 
 def learning_setup():
-    # model = StructuredNet()
-    # loss = structured_loss
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-    # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
-                    # [90, 150, 250], gamma=0.3)
-
-    model = MassEstimateNet()
+    model = LcpStructuredNet(False, False)
     loss = structured_loss
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                     [90, 150, 250], gamma=0.3)
 
@@ -51,12 +45,9 @@ def structured_loss(net_out, next_xdots, states, net):
 
     return loss
 
-def soft_max(x, y):
-    return torch.log(torch.exp(x) + torch.exp(y))
-
-class StructuredNet(torch.nn.Module):
+class LcpStructuredNet(torch.nn.Module):
     def __init__(self, warm_start, include_G_weights):
-        super(StructuredNet, self).__init__()
+        super(LcpStructuredNet, self).__init__()
         self.include_G_weights = include_G_weights
 
         self.f = torch.nn.Linear(2, 3, bias=False)
@@ -83,12 +74,8 @@ class StructuredNet(torch.nn.Module):
             torch.nn.init.xavier_uniform_(self.f.weight)
             torch.nn.init.xavier_uniform_(self.G.weight)
 
-        # Trivial solution
-        #self.f.weight.data.fill_(0)
-        #self.f_bias.data.fill_(0)
         if not include_G_weights:
             self.G.weight.data.fill_(0)
-        #self.G_bias.data.fill_(0)
     
     def add_noise(self, tensor):
         m = torch.distributions.normal.Normal(0, 0.1)
@@ -104,42 +91,6 @@ class StructuredNet(torch.nn.Module):
         else:
             Gxu = (self.G_bias.expand(states.shape[0], 9)).view(-1, 3, 3) 
         
-        lcp_slack = fxu + torch.bmm(Gxu,lambdas.unsqueeze(2)).squeeze(2)
-        
-        return lcp_slack
-
-class MassEstimateNet(torch.nn.Module):
-    def __init__(self):
-        super(MassEstimateNet, self).__init__()
-
-        self.f = torch.nn.Linear(2, 3, bias=False)
-        self.f_bias = torch.nn.Parameter(torch.ones(3))
-        self.G = torch.nn.Linear(2, 9, bias=False)
-        self.G_bias = torch.nn.Parameter(torch.ones(9))
-
-        # Correct dynamics solution
-        self.G.weight.data.fill_(0)
-        self.G_bias = Parameter(torch.tensor([1, -1, 1,
-                                             -1,  1, 1,
-                                             -1, -1, 0]).float())
-
-        self.f.weight = Parameter(torch.tensor([[1,  1],
-                                                [-1, -1],
-                                                [0,  0]]).float())
-
-        self.f_bias = Parameter(torch.tensor([0, 0, 20]).float())
-
-        self.G.weight.requires_grad = False
-        self.G_bias.requires_grad = False
-        self.f.weight.requires_grad = False
-
-    def forward(self, states):
-        lambdas = states[:, 2:5]
-        xus = states[:, 0:2]
-        fxu = self.f(xus) + self.f_bias
-        
-        Gxu = (self.G(xus) + self.G_bias).view(-1, 3, 3)
-    
         lcp_slack = fxu + torch.bmm(Gxu,lambdas.unsqueeze(2)).squeeze(2)
         
         return lcp_slack

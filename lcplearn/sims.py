@@ -13,7 +13,9 @@ class SimType(Enum):
 class ModelType(Enum):
     FALLING = 'falling'
     SLIDING_DIRECT = 'sliding_direct'
-    SLIDING_TRADITIONAL = 'sliding_traditional'
+    SLIDING_TRADITIONAL_LCP = 'sliding_traditional_lcp'
+    SLIDING_TRADITIONAL_MASS = 'sliding_traditional_mass'
+    SLIDING_TRADITIONAL_BASIS = 'sliding_traditional_basis'
 
     def __str__(self):
         return self.value
@@ -33,23 +35,34 @@ def dynamics_module(simtype):
 def model_module(modeltype):
     import falling.model as FallingModel
     import sliding.direct.model as SlidingDirectModel
-    import sliding.traditional.model as SlidingTraditionalModel
+    import sliding.traditional.lcp_structured_model as SlidingTraditionalLcpModel
+    import sliding.traditional.mass_estimate_model as SlidingTraditionalMassModel
+    import sliding.traditional.basis_model as SlidingTraditionalBasisModel
 
     if modeltype == ModelType.FALLING:
         return FallingModel
     elif modeltype == ModelType.SLIDING_DIRECT:
         return SlidingDirectModel
-    elif modeltype == ModelType.SLIDING_TRADITIONAL:
-        return SlidingTraditionalModel
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_LCP:
+        return SlidingTraditionalLcpModel
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_MASS:
+        return SlidingTraditionalMassModel
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_BASIS:
+        return SlidingTraditionalBasisModel
 
 def analyze_module(modeltype):
     import falling.analyze as FallingAnalyze
     import sliding.direct.analyze as SlidingDirectAnalyze
-    import sliding.traditional.analyze as SlidingTraditionalAnalyze
+    import sliding.traditional.lcp_analyze as SlidingTraditionalLcpAnalyze
+    import sliding.traditional.basis_analyze as SlidingTraditionalBasisAnalyze
 
     if modeltype == ModelType.FALLING:
         return FallingAnalyze
     elif modeltype == ModelType.SLIDING_DIRECT:
         return SlidingDirectAnalyze
-    elif modeltype == ModelType.SLIDING_TRADITIONAL:
-        return SlidingTraditionalAnalyze
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_LCP:
+        return SlidingTraditionalLcpAnalyze
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_MASS:
+        return SlidingTraditionalLcpAnalyze
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_BASIS:
+        return SlidingTraditionalBasisAnalyze
