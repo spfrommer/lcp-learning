@@ -37,11 +37,14 @@ def structured_loss(net_out, next_xdots, states, net):
     nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
 
     loss = 1 * comp_term + 1 * nonneg_term 
+    
+    Gxu, _ = net.get_lcps(states)
 
-    # constraints = [(1, net.G_bias[0]), (1, net.G_bias[4]),
-                   # (-1, net.G_bias[6])]
-    # for c in constraints:
-        # loss = loss + 50 * torch.norm(c[0] - c[1], 2)
+    constraints = [(1, Gxu[:, 0, 0]), (-1, Gxu[:, 0, 1]),
+                   (-1, Gxu[:, 1, 0]), (1, Gxu[:, 1, 1]),
+                   (-1, Gxu[:, 2, 0])]
+    for c in constraints:
+        loss = loss + 50 * torch.norm(c[0] - c[1], 2)
 
     return loss
 
@@ -77,6 +80,14 @@ class BasisNet(torch.nn.Module):
 
     def forward(self, states):
         lambdas = states[:, 2:5]
+        Gxu, fxu = self.get_lcps(states)
+        
+        lcp_slack = fxu + torch.bmm(Gxu,lambdas.unsqueeze(2)).squeeze(2)
+        
+        return lcp_slack
+
+    def get_lcps(self, states):
+        lambdas = states[:, 2:5]
         xus = states[:, 0:2]
         
         fxu = self.f(xus)
@@ -99,9 +110,7 @@ class BasisNet(torch.nn.Module):
         antisym_term = torch.sum(antisym_vec * antisym_basis, dim=1)
         
         Gxu = psd_term + nonneg_term + antisym_term
-        
-        lcp_slack = fxu + torch.bmm(Gxu,lambdas.unsqueeze(2)).squeeze(2)
-        
-        return lcp_slack
+
+        return Gxu, fxu
 
 if __name__ == "__main__": main()

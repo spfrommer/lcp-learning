@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 
+import torch
+
 from lcplearn import vis_utils
 from lcplearn import lcp_utils
 
@@ -45,4 +47,9 @@ def handle_print(net):
     print(net.antisym.weight)
     print('G antisym biases:')
     print(net.antisym_bias)
+
+    if not net.include_G_weights:
+        Gxu, _ = net.get_lcps(torch.zeros(1, 3))
+        print('Resultant G')
+        print(Gxu)
 
