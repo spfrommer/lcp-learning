@@ -20,6 +20,17 @@ class ModelType(Enum):
     def __str__(self):
         return self.value
 
+class AnalyzeType(Enum):
+    FALLING = 'falling'
+    SLIDING_DIRECT = 'sliding_direct'
+    SLIDING_TRADITIONAL_DATA = 'sliding_traditional_data'
+    SLIDING_TRADITIONAL_LCP = 'sliding_traditional_lcp'
+    SLIDING_TRADITIONAL_MASS = 'sliding_traditional_mass'
+    SLIDING_TRADITIONAL_BASIS = 'sliding_traditional_basis'
+
+    def __str__(self):
+        return self.value
+
 def dynamics_module(simtype):
     import falling.dynamics as FallingDynamics
     import sliding.direct.dynamics as SlidingDirectDynamics
@@ -53,16 +64,21 @@ def model_module(modeltype):
 def analyze_module(modeltype):
     import falling.analyze as FallingAnalyze
     import sliding.direct.analyze as SlidingDirectAnalyze
+    import sliding.traditional.data_analyze as SlidingTraditionalDataAnalyze
     import sliding.traditional.lcp_analyze as SlidingTraditionalLcpAnalyze
     import sliding.traditional.basis_analyze as SlidingTraditionalBasisAnalyze
 
-    if modeltype == ModelType.FALLING:
+    if modeltype == AnalyzeType.FALLING:
         return FallingAnalyze
-    elif modeltype == ModelType.SLIDING_DIRECT:
+    elif modeltype == AnalyzeType.SLIDING_DIRECT:
         return SlidingDirectAnalyze
-    elif modeltype == ModelType.SLIDING_TRADITIONAL_LCP:
+    elif modeltype == AnalyzeType.SLIDING_TRADITIONAL_DATA:
+        return SlidingTraditionalDataAnalyze
+    elif modeltype == AnalyzeType.SLIDING_TRADITIONAL_LCP:
         return SlidingTraditionalLcpAnalyze
-    elif modeltype == ModelType.SLIDING_TRADITIONAL_MASS:
+    elif modeltype == AnalyzeType.SLIDING_TRADITIONAL_MASS:
         return SlidingTraditionalLcpAnalyze
-    elif modeltype == ModelType.SLIDING_TRADITIONAL_BASIS:
+    elif modeltype == AnalyzeType.SLIDING_TRADITIONAL_BASIS:
         return SlidingTraditionalBasisAnalyze
+    else:
+        print("Can't find model for: " + str(modeltype))

@@ -5,7 +5,7 @@ import torch
 from lcplearn import vis_utils
 from lcplearn import lcp_utils
 
-from . import model
+from . import basis_model as model
 from . import dynamics
 
 def analyze(net, opts):

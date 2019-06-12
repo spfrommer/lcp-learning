@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from lcplearn import vis_utils
 from lcplearn import lcp_utils
 
-from . import model
+from . import lcp_structured_model as model
 from . import dynamics
 
 def analyze(net, opts):

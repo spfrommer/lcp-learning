@@ -69,11 +69,11 @@ def unmarshal_data(data):
 
 def main():
     print('Solving sliding sim...')
-    pp = PhysicsParams(us = (-4) * np.ones(30), g=1.0, mu=3.0)
-    sp = SimParams(x0=0.0, xdot0=0, time_steps=30)
+    pp = PhysicsParams(us = np.arange(-10, 10, -1), g=1.0, mu=3.0)
+    sp = SimParams(x0=0.0, xdot0=0, time_steps=20)
     sol = sim(pp, sp)
     print('Full output (ignore first lambda/gamma): ')
     print('x, xdot, lambda+, lambda-, gamma, u')
     print(np.hstack((sol.xs, sol.xdots, 
                      sol.poslambdas, sol.neglambdas,
-                     sol.gammas, sol.us)))
+                     sol.gammas, np.expand_dims(sol.us, 1))))

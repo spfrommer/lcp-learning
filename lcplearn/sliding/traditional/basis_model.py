@@ -24,7 +24,7 @@ def learning_setup():
     model = BasisNet(False)
     loss = structured_loss
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                     [90, 150, 250], gamma=0.3)
 
     return model, loss, optimizer, scheduler

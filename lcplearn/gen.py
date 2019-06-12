@@ -16,9 +16,9 @@ import sims
 
 g = 1.0
 dt = 1.0
-time_steps = 30
+time_steps = 4
 
-runs = 1000
+runs = 100
 
 def random_falling_params():
     pp = FallingDynamics.PhysicsParams(g=g, dt=dt)
@@ -38,7 +38,7 @@ def random_sliding_traditional_params():
     pp = SlidingTraditionalDynamics.PhysicsParams(
         us=rand.uniform(-3,3,size=(time_steps, 1)), g=g, mu=1)
     sp = SlidingTraditionalDynamics.SimParams(time_steps=time_steps,
-        x0=rand.uniform(-5,5), xdot0=rand.uniform(-5,5))
+        x0=rand.uniform(-3,3), xdot0=rand.uniform(-3,3))
     return pp, sp
 
 def main():
