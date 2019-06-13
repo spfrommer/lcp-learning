@@ -27,7 +27,7 @@ def learning_setup():
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                     [90, 150, 250], gamma=0.3)
 
-    return model, loss, optimizer, scheduler
+    return model, loss, optimizer, None
 
 def structured_loss(net_out, next_xdots, states, net):
     lcp_slack = net_out
@@ -40,9 +40,20 @@ def structured_loss(net_out, next_xdots, states, net):
     
     Gxu, _ = net.get_lcps(states)
 
-    constraints = [(1, Gxu[:, 0, 0]), (-1, Gxu[:, 0, 1]),
-                   (-1, Gxu[:, 1, 0]), (1, Gxu[:, 1, 1]),
+    constraints = [(1, Gxu[:, 0, 0]), (-1, Gxu[:, 0, 1]), 
+                   (-1, Gxu[:, 1, 0]), (1, Gxu[:, 1, 1]), (1, Gxu[:, 1, 2]), 
                    (-1, Gxu[:, 2, 0])]
+
+    # Minimum constraints needed to learn solution
+    # constraints = [(1, Gxu[:, 0, 0]), (-1, Gxu[:, 0, 1]), (1, Gxu[:, 0, 2]),
+                   # (-1, Gxu[:, 1, 0]), (1, Gxu[:, 1, 1]),
+                   # (-1, Gxu[:, 2, 0])]
+    
+    # Totally constraining G
+    # constraints = [(1, Gxu[:, 0, 0]), (-1, Gxu[:, 0, 1]), (1, Gxu[:, 0, 2]),
+            # (-1, Gxu[:, 1, 0]), (1, Gxu[:, 1, 1]), (1, Gxu[:, 1, 2]),
+            # (-1, Gxu[:, 2, 0]), (-1, Gxu[:, 2, 1]), (0, Gxu[:, 2, 2])]
+
     for c in constraints:
         loss = loss + 50 * torch.norm(c[0] - c[1], 2)
 

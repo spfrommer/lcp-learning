@@ -198,11 +198,11 @@ The reason why is pretty unintuitive and has to do with the fact that our fricti
 Essentially, we structured the problem in a way that the slack variable $w = Mz + q$ had rough physical meaning. Unless the block is at rest with no external force, there is always a physical positive friction force in one direction, and a fictitious negative friction force in the opposite direction. The nice thing about this formulation is that $M$ is 2x2 and a multiple of the identity and therefore positive definite, so we're guaranteed a unique LCP solution. We also managed to use 2 complimentarity constraints instead of 3.
 
 \subsection{Generalization}
-Do the convenient above results generalize? Let's consider the case where $u$ does not necessarily align with $\dot x$; so, we're looking at an $xy$ plane. You can't just solve an LCP for $x$ and an LCP for $y$ since it's unclear what you would set your max friction force to. That's coupled between $x$ and $y$ and must be in the direction of $v$ from the next time step. I think you can probably do some kind of a polyhedral approximation similar to the classic Stewart paper, but I haven't worked it out yet.
+Do the convenient above results generalize? Let's consider the case where $u$ does not necessarily align with $\dot x$; so, we're looking at an $xy$ plane. You can't just solve an LCP for $x$ and an LCP for $y$ since it's unclear what you would set your max friction force to. That's coupled between $x$ and $y$ and must be in the direction of $v$ from the next time step. 
 
-\begin{note}
-    What if we aligned bases with $u$ and $v$?
-\end{note}
+After thinking for a while, I can't think of a way of generalizing that doesn't do some kind of linearization based on the previous time step. Stewart \& Trinkle do this and get away with some kind of fixed point iteration scheme which would also probably work for this.
+
+The basic idea is to similarly to stewart create a set of basis vectors encoding a polyhedron. We then encode the velocity of the point mass as a vector, where each element is the \textit{projection} of the velocity vector along the corresponding basis vector. Therefore for a given velocity roughly half of the elements are nonzero. We then encode the input force $u$ in a similar way, and add that to $v$ componentwise. In order to create the direct formulation, we need to determine our slack friction values for the complementary directions. The only way of doing this, by my knowledge, is by using the velocity vector from the last time step, considering the max friction force in the exact opposite direction, and then projecting that to create the slacks. Then we can formulate all our LCP the same way as above. To implement the fixed point iteration scheme, we can then use the solution to that LCP to recalculate the direction of the new velocity vector and improve our slack friction initialization.
 
 \subsection{Traditional formulation}
 The traditional formulation of the above bidirectional sliding block problem involves a third variables, $\gamma$, which is effectively an upper bound on the absolute value of the sliding velocity. We still decompose $\lambda$ into $\lambda_+$ and $\lambda_-$, but these are now $z$ variables instead of $w$ variables in the LCP. Velocity isn't a decision variable in the formulation. Observe that we can write (assuming $\Delta t = 1$):
@@ -414,6 +414,38 @@ Observe that the trivial solution is $\vec{f} = 0$ and $G = 0$. Therefore we kno
 \[
     M = \sum_i \phi_i \phi_i^T + \sum_i \alpha_i \Phi_i^+ + \sum_i \beta_i \Phi_i^{asym}
 \]
+
+For example, the traditional sliding block example can be expressed as:
+\begin{align*}
+    \begin{bmatrix}
+        1 & -1 & 1 \\
+        -1 & 1 & 1 \\
+        -1 & -1 & 0
+    \end{bmatrix}
+    = 
+    \begin{bmatrix}
+        -1 \\
+        1 \\
+        0
+    \end{bmatrix}
+    \begin{bmatrix}
+        -1 & 1 & 0
+    \end{bmatrix}
+    +
+    1
+    \begin{bmatrix}
+        0 & 0 & 1 \\
+        0 & 0 & 0 \\
+        -1 & 0 & 0
+    \end{bmatrix}
+    +
+    1
+    \begin{bmatrix}
+        0 & 0 & 0 \\
+        0 & 0 & 1 \\
+        0 & -1 & 0
+    \end{bmatrix}
+\end{align*}
 
 Finally, we should train an additional model for $\dot x_{k+1} = h(\dot x_k, u_{k+1})$.
 
