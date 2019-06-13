@@ -18,7 +18,7 @@ g = 1.0
 dt = 1.0
 time_steps = 4
 
-runs = 100
+runs = 50
 
 def random_falling_params():
     pp = FallingDynamics.PhysicsParams(g=g, dt=dt)

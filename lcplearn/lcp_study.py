@@ -165,7 +165,7 @@ def compile_noise_results(M, q, xdotsolver, stds, selector):
     soltype_results = np.zeros((stds.size, 4))
     noise_results = np.zeros((stds.size, 2))
     
-    samples = 1000
+    samples = 200
 
     for i, std in np.ndenumerate(stds):
         i = i[0]

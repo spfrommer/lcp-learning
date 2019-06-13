@@ -20,7 +20,8 @@ def main():
     
     if opts.learntype == 'model':
         analyze = sims.analyze_module(opts.analyzetype)
-        model = sims.model_module(sims.ModelType[str(opts.analyzetype)])
+        opts.modeltype = sims.ModelType(str(opts.analyzetype)) 
+        model = sims.model_module(opts.modeltype)
 
         model = sims.model_module(opts.modeltype)
 

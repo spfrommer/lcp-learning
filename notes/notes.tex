@@ -198,11 +198,11 @@ The reason why is pretty unintuitive and has to do with the fact that our fricti
 Essentially, we structured the problem in a way that the slack variable $w = Mz + q$ had rough physical meaning. Unless the block is at rest with no external force, there is always a physical positive friction force in one direction, and a fictitious negative friction force in the opposite direction. The nice thing about this formulation is that $M$ is 2x2 and a multiple of the identity and therefore positive definite, so we're guaranteed a unique LCP solution. We also managed to use 2 complimentarity constraints instead of 3.
 
 \subsection{Generalization}
-Do the convenient above results generalize? Let's consider the case where $u$ does not necessarily align with $\dot x$; so, we're looking at an $xy$ plane. You can't just solve an LCP for $x$ and an LCP for $y$ since it's unclear what you would set your max friction force to. That's coupled between $x$ and $y$ and must be in the direction of $v$ from the next time step. I think you can probably do some kind of a polyhedral approximation similar to the classic Stewart paper, but I haven't worked it out yet.
+Do the convenient above results generalize? Let's consider the case where $u$ does not necessarily align with $\dot x$; so, we're looking at an $xy$ plane. You can't just solve an LCP for $x$ and an LCP for $y$ since it's unclear what you would set your max friction force to. That's coupled between $x$ and $y$ and must be in the direction of $v$ from the next time step. 
 
-\begin{note}
-    What if we aligned bases with $u$ and $v$?
-\end{note}
+After thinking for a while, I can't think of a way of generalizing that doesn't do some kind of linearization based on the previous time step. Stewart \& Trinkle do this and get away with some kind of fixed point iteration scheme which would also probably work for this.
+
+The basic idea is to similarly to stewart create a set of basis vectors encoding a polyhedron. We then encode the velocity of the point mass as a vector, where each element is the \textit{projection} of the velocity vector along the corresponding basis vector. Therefore for a given velocity roughly half of the elements are nonzero. We then encode the input force $u$ in a similar way, and add that to $v$ componentwise. In order to create the direct formulation, we need to determine our slack friction values for the complementary directions. The only way of doing this, by my knowledge, is by using the velocity vector from the last time step, considering the max friction force in the exact opposite direction, and then projecting that to create the slacks. Then we can formulate all our LCP the same way as above. To implement the fixed point iteration scheme, we can then use the solution to that LCP to recalculate the direction of the new velocity vector and improve our slack friction initialization.
 
 \subsection{Traditional formulation}
 The traditional formulation of the above bidirectional sliding block problem involves a third variables, $\gamma$, which is effectively an upper bound on the absolute value of the sliding velocity. We still decompose $\lambda$ into $\lambda_+$ and $\lambda_-$, but these are now $z$ variables instead of $w$ variables in the LCP. Velocity isn't a decision variable in the formulation. Observe that we can write (assuming $\Delta t = 1$):
@@ -415,9 +415,43 @@ Observe that the trivial solution is $\vec{f} = 0$ and $G = 0$. Therefore we kno
     M = \sum_i \phi_i \phi_i^T + \sum_i \alpha_i \Phi_i^+ + \sum_i \beta_i \Phi_i^{asym}
 \]
 
+For example, the traditional sliding block example can be expressed as:
+\begin{align*}
+    \begin{bmatrix}
+        1 & -1 & 1 \\
+        -1 & 1 & 1 \\
+        -1 & -1 & 0
+    \end{bmatrix}
+    = 
+    \begin{bmatrix}
+        -1 \\
+        1 \\
+        0
+    \end{bmatrix}
+    \begin{bmatrix}
+        -1 & 1 & 0
+    \end{bmatrix}
+    +
+    1
+    \begin{bmatrix}
+        0 & 0 & 1 \\
+        0 & 0 & 0 \\
+        -1 & 0 & 0
+    \end{bmatrix}
+    +
+    1
+    \begin{bmatrix}
+        0 & 0 & 0 \\
+        0 & 0 & 1 \\
+        0 & -1 & 0
+    \end{bmatrix}
+\end{align*}
+
 Finally, we should train an additional model for $\dot x_{k+1} = h(\dot x_k, u_{k+1})$.
 
 \textit{Results: } I tried two things: just learning $\vec{f}$ and $G$ directly (each element is affine in $\dot x_k$ and $u_{k+1}$) and learning with a basis. In the first case, things didn't converge unless I had a ton of samples (10-30k ish). To get the correct scaling, I constrained one element of $G$ from each row. Furthermore, I needed to make $G$ not a function of $\dot x_k$ and $u_{k+1}$, otherwise it just converged with some weird degenerate solutions. Then the correct matrix was recovered.
+
+For learning with a basis, I had to impose a ridiculous amount of structure. First had to make $G$ completely independent of $\dot x$ and $u_{k+1}$. Then had to specify a bunch of overall summed outputs (3 first row, 2 second row, 1 third row). After doing that I recovered the above decomposition.
 
 \subsubsection{Linear program formulation}
 Just using a normal gradient based method for the above problem doesn't really converge reliably. However, we can impose a linear structure and turn it into a linear program. Let's turn the nonnegativity condition into a constraint ($M \vec{\lambda} + \vec{q} \geq \vec{0}$) and the complimentarity condition into the objective (minimize $\vec{\lambda}^T (M \vec{\lambda} + \vec{q})$). Making both into inequality constraints would probably mess up the solver, since they often rely on finding an initial feasible point. Let's now try and vectorize these, starting with the nonnegativity constraint:
@@ -528,6 +562,7 @@ Another thing that could help drive things to zero that should be zero is $L1$ r
 
 The new cost vector would just append some constants $\mu$ for length $\vec{s}$.
 
+\textit{Results: } The good thing is it converges with very few data poinst (couple hundred). When I include biases in the first two elements of $\vec{q}$, I get weird degenerate solutions that minimize the cost but don't look correct. However, when I take away those biases I get the correct $M$ and $\vec{q}$ except with each row scaled. $L1$ regularization just shrinks the weights until I get within the optimality tolerance.
 
 \subsection{Unknown frictional forces}
 What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. Under the traditional framework, we would learn $\vec{f}$ and $G$, use those to solve for the friction forces, then calculate $\dot x_{k+1}$ from there. The issue here is, can we predict sticking and sliding if there is noise on $\vec{f}$ and $G$? I looked at this in \textit{lcp\_study.py}. It turns out if only single elements of $M$ and $\vec{q}$ are perturbed, the solution is usually stable (sticking is observed). However, as soon as we add random noise, this breaks down. When $u=0$ we sometimes coincidentally get the right answer if all the $\vec{q}$ elems are strictly positive (gives zero friction forces as trivial solution). However, as soon as $u \neq 0$, we need a precise nonzero friction force equal to $-u$ to induce sticking. Random noise makes this impossible. Let's look at one particular case more analytically:

@@ -41,7 +41,7 @@ def handle_print(net):
     print('G nonneg weights:')
     print(net.nonneg_matrix.weight)
     print('G nonneg biases:')
-    print(net.nonneg_matrix_bias)
+    print(net.nonneg_matrix_bias.view(3, 3))
 
     print('G antisym weights:')
     print(net.antisym.weight)
