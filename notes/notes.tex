@@ -417,6 +417,8 @@ Observe that the trivial solution is $\vec{f} = 0$ and $G = 0$. Therefore we kno
 
 Finally, we should train an additional model for $\dot x_{k+1} = h(\dot x_k, u_{k+1})$.
 
+\textit{Results: } I tried two things: just learning $\vec{f}$ and $G$ directly (each element is affine in $\dot x_k$ and $u_{k+1}$) and learning with a basis. In the first case, things didn't converge unless I had a ton of samples (10-30k ish). To get the correct scaling, I constrained one element of $G$ from each row. Furthermore, I needed to make $G$ not a function of $\dot x_k$ and $u_{k+1}$, otherwise it just converged with some weird degenerate solutions. Then the correct matrix was recovered.
+
 \subsubsection{Linear program formulation}
 Just using a normal gradient based method for the above problem doesn't really converge reliably. However, we can impose a linear structure and turn it into a linear program. Let's turn the nonnegativity condition into a constraint ($M \vec{\lambda} + \vec{q} \geq \vec{0}$) and the complimentarity condition into the objective (minimize $\vec{\lambda}^T (M \vec{\lambda} + \vec{q})$). Making both into inequality constraints would probably mess up the solver, since they often rely on finding an initial feasible point. Let's now try and vectorize these, starting with the nonnegativity constraint:
 
@@ -484,7 +486,48 @@ Now we want to express the cost function $\vec{\lambda}^T (M \vec{\lambda} + \ve
 
 This is now a linear program! Ideally, we'd solve it and the cost would go to zero. However, we also need to take into account the trivial solution. In order to prevent just driving $M$ and $\vec{q}$ to zero, we can instead have $M \vec{\lambda} + q \geq \vec{\epsilon}$, where $\vec{\epsilon}$ is some small positive constant vector.
 
-Another thing that could help drive things to zero that should be zero is $L1$ regularization.
+Another thing that could help drive things to zero that should be zero is $L1$ regularization. We do that by adding a vector $\vec{s}$ of length equal to the sum of $M$ and $W$'s sizes. These would then be decision variables, and we would have the following constraint matrix:
+
+\[
+    \begin{bmatrix}
+        \vec{\lambda} ^1 & \vec{0} & \vec{0} & \vec{d}^1 & \vec{0} & \vec{0} & 0 & \dots & 0 \\
+        \vec{0} & \vec{\lambda} ^1 & \vec{0} & \vec{0} & \vec{d}^1 & \vec{0} & 0 & \dots & 0\\
+        \vec{0} & \vec{0} & \vec{\lambda} ^1 & \vec{0} & \vec{0} & \vec{d}^1 & 0 & \dots & 0\\
+                & & \dots & \dots & & \\
+        \vec{\lambda} ^n & \vec{0} & \vec{0} & \vec{d}^n & \vec{0} & \vec{0} & 0 & \dots & 0\\
+        \vec{0} & \vec{\lambda} ^n & \vec{0} & \vec{0} & \vec{d}^n & \vec{0} & 0 & \dots & 0\\
+        \vec{0} & \vec{0} & \vec{\lambda} ^n & \vec{0} & \vec{0} & \vec{d}^n & 0 & \dots & 0\\
+        1 & \dots & \dots & \dots & \dots & 0 & 1 & 0 & \dots \\
+        0 & 1 & \dots & \dots & \dots & 0 & 0 & 1 & \dots \\
+        \dots \\
+        -1 & \dots & \dots & \dots & \dots & 0 & 1 & 0 & \dots \\
+        0 & -1 & \dots & \dots & \dots & 0 & 0 & 1 & \dots \\
+
+    \end{bmatrix}
+    \begin{bmatrix}
+        M_{11} \\
+        M_{12} \\
+        M_{13} \\
+        \dots \\
+        M_{31} \\
+        M_{32} \\
+        M_{33} \\
+        W_{11} \\
+        W_{12} \\
+        W_{13} \\
+        \dots \\
+        W_{31} \\
+        W_{32} \\
+        W_{33} \\
+        s_1 \\
+        \dots \\
+        s_{18}
+    \end{bmatrix}
+    \geq 0
+\]
+
+The new cost vector would just append some constants $\mu$ for length $\vec{s}$.
+
 
 \subsection{Unknown frictional forces}
 What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. Under the traditional framework, we would learn $\vec{f}$ and $G$, use those to solve for the friction forces, then calculate $\dot x_{k+1}$ from there. The issue here is, can we predict sticking and sliding if there is noise on $\vec{f}$ and $G$? I looked at this in \textit{lcp\_study.py}. It turns out if only single elements of $M$ and $\vec{q}$ are perturbed, the solution is usually stable (sticking is observed). However, as soon as we add random noise, this breaks down. When $u=0$ we sometimes coincidentally get the right answer if all the $\vec{q}$ elems are strictly positive (gives zero friction forces as trivial solution). However, as soon as $u \neq 0$, we need a precise nonzero friction force equal to $-u$ to induce sticking. Random noise makes this impossible. Let's look at one particular case more analytically:
