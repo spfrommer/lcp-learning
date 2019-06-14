@@ -34,9 +34,17 @@ def main():
     xdot0 = 0
     u = 1
 
-    def xdotsolver(poslambda, neglambda):
-        _, xdot = dynamics.dynamics_step(0, xdot0, poslambda, neglambda, u)
-        return xdot
+    check_gamma = True
+
+    def xdotsolver(lcp_sol):
+        poslambda = lcp_sol[0]
+        neglambda = lcp_sol[1]
+        gamma = lcp_sol[2]
+        if np.isclose(gamma, 0) and check_gamma:
+            return 0
+        else:
+            _, xdot = dynamics.dynamics_step(0, xdot0, poslambda, neglambda, u)
+            return xdot
 
     M, q = dynamics.lcp(xdot=xdot0, u=u, pp=pp)
     
@@ -198,7 +206,7 @@ def matrix_noise(M, q, xdotsolver, std, selector):
 def compare_solution(Mprime, qprime, xdotsolver, sol):
     poslambda = sol[0]
     neglambda = sol[1]
-    xdot = xdotsolver(poslambda, neglambda)
+    xdot = xdotsolver(sol)
 
     soltype = None
     xdoterr = None
@@ -209,7 +217,7 @@ def compare_solution(Mprime, qprime, xdotsolver, sol):
     else:
         poslambdaprime = sol[0]
         neglambdaprime = sol[1]
-        xdotprime = xdotsolver(poslambdaprime, neglambdaprime)
+        xdotprime = xdotsolver(sol)
         xdoterr = xdotprime - xdot
 
         if np.isclose(poslambda, poslambdaprime) and \

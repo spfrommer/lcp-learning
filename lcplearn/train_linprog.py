@@ -68,6 +68,9 @@ def main():
     
     #bounds = ([(-1, 1)] * 18) + ([(None, None)] * 18)
     bounds = [(None, None)] * R.shape[1]
+    bounds[0] = (1, None)
+    bounds[3] = (None, -1)
+    bounds[6] = (None, -1)
 
     sol = linprog(c, A_ub = A_ub, b_ub = b_ub, bounds = bounds, method="interior-point", options={"tol": 1e-06})
     #sol = linprog(c, A_ub = A_ub, b_ub = b_ub, bounds = bounds, method="simplex", options={"tol": 1e-06})

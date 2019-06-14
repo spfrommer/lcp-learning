@@ -564,6 +564,51 @@ The new cost vector would just append some constants $\mu$ for length $\vec{s}$.
 
 \textit{Results: } The good thing is it converges with very few data poinst (couple hundred). When I include biases in the first two elements of $\vec{q}$, I get weird degenerate solutions that minimize the cost but don't look correct. However, when I take away those biases I get the correct $M$ and $\vec{q}$ except with each row scaled. $L1$ regularization just shrinks the weights until I get within the optimality tolerance.
 
+\textit{Degeneracy example: } I'm just going to document one example of a degeneracy that can happen if you don't remove the biases in the first two elements of $\vec{q}$. Consider we learn something like:
+
+\[
+0 \leq
+\begin{bmatrix}
+    \lambda^+ \\
+    \lambda^- \\
+    \gamma
+\end{bmatrix}
+\perp
+\begin{bmatrix}
+    \dots & \dots & \dots \\
+    -2.21 & -1.57 & 0.319 \\
+    \dots & \dots & \dots
+\end{bmatrix}
+\begin{bmatrix}
+    \lambda^+ \\
+    \lambda^- \\
+    \gamma
+\end{bmatrix}
++ 
+\begin{bmatrix}
+    \dots \\
+    -0.319 \dot x - 0.319 u + 1.898 \\
+    \dots
+\end{bmatrix}
+\]
+
+We can just look at a particular row since they're pretty much decoupled. Let's write out the resulting equation:
+\begin{align*}
+    0 \leq \lambda^- \perp -2.21 \lambda^+ - 1.57 \lambda^- + 0.319 \gamma - 0.319 \dot x_k - 0.319 u + 1.898 \geq 0
+\end{align*}
+
+Now assume the block is sliding to the right. Then we have $\lambda^- = 1$ (assuming unit friction/mass/gravity) and $\lambda^+ = 0$. Gamma is also equal to $\dot x_{k+1}$ (since it's usually just equal to abs value of velocity). To satisfy the RHS, we then need:
+\begin{align*}
+    - 1.57 + 0.319 \dot x_{k+1} - 0.319 \dot x_k - 0.319 u + 1.898 &= 0 \\
+    \dot x_{k+1} - \dot x_k - u + 1 &= 0 \\
+    \dot x_{k+1} &= \dot x_k + u - 1
+\end{align*}
+We can now see that $1$ is just the friction force and this corresponds roughly to just satisfying the dynamics (might be some complications with block changing direction but this is the idea). We can also look at the other case, where $\dot x_{k+1} = \gamma = 0$. Assume $u \geq 0$, so $\lambda^+ = 0$. Assume the right hand side is equal to zero (sticking, but nonzero external force).
+\begin{align*}
+    - 1.57 \lambda^- - 0.319 \dot x_k - 0.319 u + 1.898 = 0 \\
+    - 1.57 \lambda^- - 0.319 \dot x_k - 0.319 u + 1.898 = 0 \\
+\end{align*}
+
 \subsection{Unknown frictional forces}
 What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. Under the traditional framework, we would learn $\vec{f}$ and $G$, use those to solve for the friction forces, then calculate $\dot x_{k+1}$ from there. The issue here is, can we predict sticking and sliding if there is noise on $\vec{f}$ and $G$? I looked at this in \textit{lcp\_study.py}. It turns out if only single elements of $M$ and $\vec{q}$ are perturbed, the solution is usually stable (sticking is observed). However, as soon as we add random noise, this breaks down. When $u=0$ we sometimes coincidentally get the right answer if all the $\vec{q}$ elems are strictly positive (gives zero friction forces as trivial solution). However, as soon as $u \neq 0$, we need a precise nonzero friction force equal to $-u$ to induce sticking. Random noise makes this impossible. Let's look at one particular case more analytically:
 
@@ -599,5 +644,7 @@ Furthermore, I don't think the traditional way is capable of encoding sticking. 
 \begin{itemize}
     \item Markov random field / Markov chain for state transitions. Captures multimodality. However, continuous and multidimensional state space is an issue. Could potentially use stick/slip/detach as states instead.
     \item Generalizing direct formulation to non-full-rank jacobian scenarios
+    \item Relu into each element of $M$ (one pos, one neg) -> learn exact zeros in $M$
+    \item Use gamma to determine sticking? Doesn't actually work that well
 \end{itemize}
 \end{document}
