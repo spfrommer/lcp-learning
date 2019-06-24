@@ -21,9 +21,10 @@ def load_data(path):
     return states, ys, data
 
 def learning_setup():
-    model = LcpStructuredNet(False, False)
+    model = LcpStructuredNet(False, True)
     loss = structured_loss
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    #optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                     [90, 150, 250], gamma=0.3)
 
@@ -32,12 +33,15 @@ def learning_setup():
 def structured_loss(net_out, next_xdots, states, net):
     lcp_slack = net_out
     lambdas = states[:, 2:5]
-
-    comp_term = torch.norm(lambdas * lcp_slack, 2)
+    
+    #comp_term = torch.norm(lambdas * lcp_slack, 2)
+    comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
+                          torch.clamp(lcp_slack, min=0).unsqueeze(2)))
     nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
 
-    constraints = [(1, net.G_bias[0]), (1, net.G_bias[4]),
-                   (-1, net.G_bias[6])]
+    #constraints = [(1, net.G_bias[0]), (1, net.G_bias[4]),
+    #               (-1, net.G_bias[6])]
+    constraints = []
 
     loss = 1 * comp_term + 1 * nonneg_term 
     for c in constraints:
