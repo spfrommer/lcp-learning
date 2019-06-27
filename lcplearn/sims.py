@@ -5,6 +5,7 @@ from enum import Enum
 class SimType(Enum):
     FALLING = 'falling'
     SLIDING_DIRECT = 'sliding_direct'
+    SLIDING_DIRECT_FORCE = 'sliding_direct_force'
     SLIDING_TRADITIONAL = 'sliding_traditional'
 
     def __str__(self):
@@ -16,6 +17,7 @@ class ModelType(Enum):
     SLIDING_TRADITIONAL_LCP = 'sliding_traditional_lcp'
     SLIDING_TRADITIONAL_MASS = 'sliding_traditional_mass'
     SLIDING_TRADITIONAL_BASIS = 'sliding_traditional_basis'
+    SLIDING_TRADITIONAL_DEEP = 'sliding_traditional_deep'
 
     def __str__(self):
         return self.value
@@ -34,12 +36,15 @@ class AnalyzeType(Enum):
 def dynamics_module(simtype):
     import falling.dynamics as FallingDynamics
     import sliding.direct.dynamics as SlidingDirectDynamics
+    import sliding.directforce.dynamics as SlidingDirectForceDynamics
     import sliding.traditional.dynamics as SlidingTraditionalDynamics
 
     if simtype == SimType.FALLING:
         return FallingDynamics
     elif simtype == SimType.SLIDING_DIRECT:
         return SlidingDirectDynamics
+    elif simtype == SimType.SLIDING_DIRECT_FORCE:
+        return SlidingDirectForceDynamics
     elif simtype == SimType.SLIDING_TRADITIONAL:
         return SlidingTraditionalDynamics
 
@@ -49,6 +54,7 @@ def model_module(modeltype):
     import sliding.traditional.lcp_structured_model as SlidingTraditionalLcpModel
     import sliding.traditional.mass_estimate_model as SlidingTraditionalMassModel
     import sliding.traditional.basis_model as SlidingTraditionalBasisModel
+    import sliding.traditional.deep_model as SlidingTraditionalDeepModel
 
     if modeltype == ModelType.FALLING:
         return FallingModel
@@ -60,6 +66,8 @@ def model_module(modeltype):
         return SlidingTraditionalMassModel
     elif modeltype == ModelType.SLIDING_TRADITIONAL_BASIS:
         return SlidingTraditionalBasisModel
+    elif modeltype == ModelType.SLIDING_TRADITIONAL_DEEP:
+        return SlidingTraditionalDeepModel
 
 def analyze_module(modeltype):
     import falling.analyze as FallingAnalyze

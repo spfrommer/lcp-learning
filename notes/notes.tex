@@ -204,6 +204,83 @@ After thinking for a while, I can't think of a way of generalizing that doesn't 
 
 The basic idea is to similarly to stewart create a set of basis vectors encoding a polyhedron. We then encode the velocity of the point mass as a vector, where each element is the \textit{projection} of the velocity vector along the corresponding basis vector. Therefore for a given velocity roughly half of the elements are nonzero. We then encode the input force $u$ in a similar way, and add that to $v$ componentwise. In order to create the direct formulation, we need to determine our slack friction values for the complementary directions. The only way of doing this, by my knowledge, is by using the velocity vector from the last time step, considering the max friction force in the exact opposite direction, and then projecting that to create the slacks. Then we can formulate all our LCP the same way as above. To implement the fixed point iteration scheme, we can then use the solution to that LCP to recalculate the direction of the new velocity vector and improve our slack friction initialization.
 
+\subsection{Direct formulation 2}
+The primary issue with generalizing the above is figuring out what the max friction along each vector should be. In this section, we try to use regular friction instead of slack friction but still decompose the velocity. Let the new LCP be:
+\begin{align*}
+    0 \leq \lambda_{k+1}^+ &\perp \dot x_{k+1}^+ \geq 0 \\
+    0 \leq \lambda_{k+1}^- &\perp \dot x_{k+1}^- \geq 0
+\end{align*}
+
+We have similar equations of motion:
+
+\begin{align*}
+    \dot x^+_{k+1} &= \dot x^+_k + (u_{k+1} - \frac{1}{\Delta t} \dot x^-_{k} - \lambda^-_{k+1}) \Delta t \\
+    \lambda^-_{k+1} &= -\frac{1}{\Delta t} \dot x^+_{k+1} - \frac{1}{\Delta t} \dot x^-_{k} + \frac{1}{\Delta t} \dot x^+_k + u_{k+1}
+\end{align*}
+Similarly, we can get:
+\begin{align*}
+    \dot x^-_{k+1} &= \dot x^-_k + (-u_{k+1} - \frac{1}{\Delta t} \dot x^+_{k} - \lambda^+_{k+1}) \Delta t \\
+    \lambda^+_{k+1} &= - \frac{1}{\Delta t} \dot x^-_{k+1} - \frac{1}{\Delta t} \dot x^+_{k} + \frac{1}{\Delta t} \dot x^-_k - u_{k+1}
+\end{align*}
+
+We can now put these in matrix form as:
+\[
+    \begin{bmatrix}
+        \lambda ^+_{k+1} \\
+        \lambda ^-_{k+1}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 & -\frac{1}{\Delta t} \\
+        -\frac{1}{\Delta t} & 0
+    \end{bmatrix}
+    \begin{bmatrix}
+        \dot x ^+_{k+1} \\
+        \dot x ^-_{k+1}
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        \frac{1}{\Delta t} \dot x^-_k - \frac{1}{\Delta t} \dot x^+_k - u_{k+1} \\
+        \frac{1}{\Delta t} \dot x^+_k - \frac{1}{\Delta t} \dot x^-_k + u_{k+1}
+    \end{bmatrix}
+\]
+But wait! We need to also incorporate now that $\lambda ^+ _{k+1} + \lambda^- _{k+1} \leq \mu m g$. We can reformulate as:
+\[
+    \begin{bmatrix}
+        \dot x ^+_{k+1} \\
+        \dot x ^-_{k+1} \\
+        \rho
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 & -{\Delta t} & 0 \\
+        -{\Delta t} & 0 & 0 \\
+        -1 & -1 & 0
+    \end{bmatrix}
+    \begin{bmatrix}
+        \lambda ^+_{k+1} \\
+        \lambda ^-_{k+1} \\
+        \gamma
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        \dot x^+_k - \dot x^-_k + \Delta t \cdot u_{k+1} \\
+        \dot x^-_k - \dot x^+_k - \Delta t \cdot u_{k+1} \\
+        \mu m g
+    \end{bmatrix}
+\]
+This equation gives us the form of our $M$ matrix and $q$ vector. We also have the below constraints:
+\begin{align*}
+    \lambda^+_{k+1} &\geq 0\\
+    \lambda^-_{k+1} &\geq 0 \\
+    \dot x^+_{k+1} &\geq 0 \\
+    \dot x^-_{k+1} &\geq 0 \\
+    \lambda^+_{k+1} \dot x^+_{k+1} &= 0 \quad \textrm{block sliding to the right means no friction force to the right} \\
+    \lambda^-_{k+1} \dot x^-_{k+1} &= 0 \quad \textrm{block sliding to the left means no friction force to the left}
+\end{align*}
+
+With $\rho$ and $\gamma$ being meaningless. Admittedly the above formulation looks kind of stupid since you're not reducing the dimensionality of your system and also the $M$ matrix is no longer positive semidefinite. It also just doesn't work. Yikes.
+
 \subsection{Traditional formulation}
 The traditional formulation of the above bidirectional sliding block problem involves a third variables, $\gamma$, which is effectively an upper bound on the absolute value of the sliding velocity. We still decompose $\lambda$ into $\lambda_+$ and $\lambda_-$, but these are now $z$ variables instead of $w$ variables in the LCP. Velocity isn't a decision variable in the formulation. Observe that we can write (assuming $\Delta t = 1$):
 \[

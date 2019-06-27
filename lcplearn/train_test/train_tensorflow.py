@@ -14,7 +14,7 @@ import numpy as np
 from sliding.traditional import dynamics
 
 EPOCHS = 800
-BATCH_SIZE = 1
+BATCH_SIZE = 32
 
 def load_data(path):
     data = dynamics.unmarshal_data(np.load(path)) 
@@ -24,7 +24,7 @@ def load_data(path):
     train_dataset = tf.data.Dataset.from_tensor_slices((states.T, ys))
     return states, ys, train_dataset
 
-def structured_loss(net_out, next_xdots, states, net):
+def structured_loss(lcp_slack, next_xdots, states, net):
     # G_loss = tf.sqrt(tf.reduce_sum(tf.square(net.G.weights[0]))) + \
            # tf.sqrt(tf.reduce_sum(tf.square(net.G.weights[1]))) 
     # f_loss = tf.sqrt(tf.reduce_sum(tf.square(net.f.weights[0]))) + \
@@ -32,24 +32,27 @@ def structured_loss(net_out, next_xdots, states, net):
 
     # return G_loss + f_loss
 
-    lcp_slack = net_out
     lambdas = states[:, 2:5]
-    return tf.sqrt(tf.reduce_sum(tf.square(lcp_slack)))
-    
-    # #comp_term = torch.norm(lambdas * lcp_slack, 2)
-    # comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
-                          # torch.clamp(lcp_slack, min=0).unsqueeze(2)))
-    # nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
 
-    # #constraints = [(1, net.G_bias[0]), (1, net.G_bias[4]),
-    # #               (-1, net.G_bias[6])]
+    # pdb.set_trace()
+    # return tf.reduce_sum(tf.square(lcp_slack))
+    
+    #comp_term = torch.norm(lambdas * lcp_slack, 2)
+    #comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
+    #                      torch.clamp(lcp_slack, min=0).unsqueeze(2)))
+    #nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
+    comp_term = tf.reduce_sum(tf.square(lambdas * lcp_slack[:, :, 0]))
+    nonneg_term = tf.reduce_sum(tf.square(tf.clip_by_value(-lcp_slack, 0, 1000000)))
+
+    #constraints = [(1, net.G_bias[0]), (1, net.G_bias[4]),
+    #               (-1, net.G_bias[6])]
     # constraints = []
 
-    # loss = 1 * comp_term + 1 * nonneg_term 
+    loss = 1 * comp_term + 1 * nonneg_term 
     # for c in constraints:
         # loss = loss + 50 * torch.norm(c[0] - c[1], 2)
 
-    # return loss
+    return loss
 
 def main():
     parser = ArgumentParser()

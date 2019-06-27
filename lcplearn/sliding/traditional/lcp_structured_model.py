@@ -16,6 +16,8 @@ def load_data(path):
                 data.xdots, data.us, data.poslambdas,
                 data.neglambdas, data.gammas)).transpose())
     ys = torch.from_numpy(data.next_xdots)
+    states = states[0:2, :]
+    ys = ys[0:2]
 
     states, ys = Variable(states), Variable(ys)
     return states, ys, data
@@ -23,10 +25,11 @@ def load_data(path):
 def learning_setup():
     model = LcpStructuredNet(False, True)
     loss = structured_loss
-    #optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
-                    [90, 150, 250], gamma=0.3)
+                    [1000, 3000, 5000, 8000], gamma=0.1)
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
+    #                [90, 150, 250], gamma=0.3)
 
     return model, loss, optimizer, scheduler
 
@@ -34,10 +37,19 @@ def structured_loss(net_out, next_xdots, states, net):
     lcp_slack = net_out
     lambdas = states[:, 2:5]
     
-    #comp_term = torch.norm(lambdas * lcp_slack, 2)
-    comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
-                          torch.clamp(lcp_slack, min=0).unsqueeze(2)))
     nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
+    # Posa formulation
+    comp_term = torch.norm(lcp_slack + lambdas - torch.sqrt(lcp_slack**2 + lambdas**2), 2)
+
+    # Assuming lambdas and lcp slack are constrained to be positive
+    #comp_term = torch.norm(torch.min(lcp_slack, lambdas), 2)
+
+    # Basic formulation
+    # comp_term = torch.norm(lambdas * lcp_slack, 2)
+    
+    # Not really sure how this works anymore
+    #comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
+    #                      torch.clamp(lcp_slack, min=0).unsqueeze(2)))
 
     #constraints = [(1, net.G_bias[0]), (1, net.G_bias[4]),
     #               (-1, net.G_bias[6])]

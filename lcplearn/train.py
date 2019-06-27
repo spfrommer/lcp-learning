@@ -4,69 +4,94 @@ sys.path.append('..')
 from argparse import ArgumentParser
 import pdb
 
+import math
+
 import torch
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, random_split
 
 import sims
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = "cpu"
 
-EPOCHS = 800
+EPOCHS = 10000
+DATA_SIZE = None
 BATCH_SIZE = 32
+
+def get_data(dataset):
+    states = (dataset.dataset.tensors[0])[dataset.indices, :]
+    ys = (dataset.dataset.tensors[1])[dataset.indices]
+    return states, ys
+
+def get_losses(train_dataset, validation_dataset, net, loss_func):
+    train_states, train_ys = get_data(train_dataset)
+    train_loss = loss_func(net(train_states), train_ys,
+            train_states, net).data.item()
+    
+    validation_states, validation_ys = get_data(validation_dataset)
+    validation_loss = loss_func(net(validation_states), validation_ys,
+            validation_states, net).data.item()
+
+    return train_loss, validation_loss
+
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--datapath', default='out/data.npy')
     parser.add_argument('--modelpath', default='out/model.pt')
-    parser.add_argument('--learntype', default='pytorch',
-                        choices=['pytorch', 'custom'])
     parser.add_argument('modeltype', type=sims.ModelType,
                                      choices=list(sims.ModelType))
     opts = parser.parse_args()
     
-    if opts.learntype == 'pytorch':
-        model = sims.model_module(opts.modeltype)
-        net, loss_func, optimizer, scheduler = model.learning_setup()
-        net = net.to(device)
+    model = sims.model_module(opts.modeltype)
+    net, loss_func, optimizer, scheduler = model.learning_setup()
+    net = net.to(device)
 
-        states, ys, _ = model.load_data(opts.datapath)
-        states = states.to(device)
-        ys = ys.to(device)
+    states, ys, _ = model.load_data(opts.datapath)
+    states = states[0:min(states.shape[0], DATA_SIZE), :]
+    ys = ys[0:min(states.shape[0], DATA_SIZE)]
+    states = states.to(device)
+    ys = ys.to(device)
 
-        dataset = TensorDataset(states, ys)
-        dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
-        
-        print("Using device: {}".format(device))
-        print("Dataset size: {}".format(len(dataset)))
-        print("Batch size: {}".format(BATCH_SIZE))
+    dataset = TensorDataset(states, ys)
+    train_split = int(len(dataset) * 0.8)
+    train_dataset, validation_dataset = random_split(dataset, 
+            [train_split, len(dataset) - train_split])
 
-        train_loss = loss_func(net(states), ys, states, net).data.item()
-        print('Starting loss: {}'.format(train_loss))
+    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    
+    print("Using device: {}".format(device))
+    print("Dataset size: {}".format(len(dataset)))
+    print("Batch size: {}".format(BATCH_SIZE))
 
-        for epoch in range(EPOCHS):
-            if not scheduler is None:
-                scheduler.step()
+    train_loss, validation_loss = get_losses(train_dataset,
+                validation_dataset, net, loss_func)
+    print('Starting train loss {:.2e} and validation loss {:.2e}'.format(
+        train_loss, validation_loss))
 
-            for batch in dataloader:
-                states_batch, ys_batch = batch
-                
-                ys_pred = net(states_batch)
-                loss = loss_func(ys_pred, ys_batch, states_batch, net)
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+    for epoch in range(EPOCHS):
+        if not scheduler is None:
+            scheduler.step()
 
-            train_loss = loss_func(net(states), ys, states, net).data.item()
-            print('Finished epoch {} with loss: {}'.format(epoch, train_loss))
+        for batch in train_dataloader:
+            states_batch, ys_batch = batch
+            
+            ys_pred = net(states_batch)
+            loss = loss_func(ys_pred, ys_batch, states_batch, net)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-            torch.save(net.state_dict(), opts.modelpath)
+        train_loss, validation_loss = get_losses(train_dataset,
+                    validation_dataset, net, loss_func)
+        print('Finished epoch {} with train loss {:.2e} and validation loss {:.2e}'.format(epoch, train_loss, validation_loss))
 
-        train_loss = loss_func(net(states), ys, states, net).data.item()
-        print('Finished training with loss: {}'.format(train_loss))
         torch.save(net.state_dict(), opts.modelpath)
-    elif opts.learntype == 'custom':
-        print('No custom support')
+
+    train_loss = loss_func(net(states), ys, states, net).data.item()
+    print('Finished training with loss: {}'.format(train_loss))
+    torch.save(net.state_dict(), opts.modelpath)
 
 if __name__ == "__main__": main()
