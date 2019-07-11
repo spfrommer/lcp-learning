@@ -33,12 +33,13 @@ def structured_loss(net_out, next_xdots, states, net):
     lcp_slack = net_out
     lambdas = states[:, 2:5]
     
-    #comp_term = torch.norm(lambdas * lcp_slack, 2)
-    comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
-                          torch.clamp(lcp_slack, min=0).unsqueeze(2)))
+    comp_term = torch.norm(lambdas * lcp_slack, 2)
+    #comp_term = torch.norm(torch.bmm(lambdas.unsqueeze(1),
+    #                      torch.clamp(lcp_slack, min=0).unsqueeze(2)))
     nonneg_term = torch.norm(torch.clamp(-lcp_slack, min=0), 2)
     
-    loss = (1 * comp_term + 1 * nonneg_term) / net_out.shape[0]
+    #loss = (1 * comp_term + 1 * nonneg_term) / net_out.shape[0]
+    loss = (1 * comp_term + 1 * nonneg_term)
     return loss
 
 class DeepNet(torch.nn.Module):

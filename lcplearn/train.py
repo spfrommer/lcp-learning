@@ -25,12 +25,14 @@ def get_data(dataset):
 
 def get_losses(train_dataset, validation_dataset, net, loss_func):
     train_states, train_ys = get_data(train_dataset)
-    train_loss = loss_func(net(train_states), train_ys,
-            train_states, net).data.item()
+    # train_loss = loss_func(net(train_states), train_ys,
+            # train_states, net).data.item()
+    train_loss = torch.norm(loss_func(net(train_states), train_ys,
+            train_states, net), 1)
     
     validation_states, validation_ys = get_data(validation_dataset)
-    validation_loss = loss_func(net(validation_states), validation_ys,
-            validation_states, net).data.item()
+    validation_loss = torch.norm(loss_func(net(validation_states), validation_ys,
+            validation_states, net), 1)
 
     return train_loss, validation_loss
 
@@ -82,6 +84,8 @@ def main():
             
             optimizer.zero_grad()
             loss.backward()
+            # For vector valued loss 
+            #loss.backward(torch.ones(loss.size()))
             optimizer.step()
 
         train_loss, validation_loss = get_losses(train_dataset,
@@ -93,5 +97,18 @@ def main():
     train_loss = loss_func(net(states), ys, states, net).data.item()
     print('Finished training with loss: {}'.format(train_loss))
     torch.save(net.state_dict(), opts.modelpath)
+
+def get_back(var_grad_fn):
+    print(var_grad_fn)
+    for n in var_grad_fn.next_functions:
+        if n[0]:
+            try:
+                tensor = getattr(n[0], 'variable')
+                print(n[0])
+                print('Tensor with grad found:', tensor)
+                print(' - gradient:', tensor.grad)
+                print()
+            except AttributeError as e:
+                get_back(n[0])
 
 if __name__ == "__main__": main()

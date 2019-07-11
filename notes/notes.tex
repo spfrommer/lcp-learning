@@ -378,8 +378,8 @@ Usually LCP formulations don't go through the trouble of subbing $v_{k+1}$ back 
         w_3
     \end{bmatrix}, \quad
     \begin{bmatrix}
-        \lambda^+_{k+1} \\
-        \lambda^-_{k+1} \\
+        \lambda^+_{k+1} &
+        \lambda^-_{k+1} &
         \gamma_{k+1}
     \end{bmatrix}
     \begin{bmatrix}
@@ -389,6 +389,143 @@ Usually LCP formulations don't go through the trouble of subbing $v_{k+1}$ back 
     \end{bmatrix}
     = 0
 \]
+
+\subsection{Falling point mass with friction}
+Let's now let the normal force be a free variable, and let the particle move in 2D. Using the Anitescu formulation, we can then write:
+
+\[
+    M (\vec{v_{k+1}} - \vec{v_k}) - \vec{\hat n} \cdot \lambda^c _{k+1} - \vec{d_1} \cdot \lambda^+_{k+1} - \vec{d_2} \cdot \lambda^-_{k+1} = \vec{u_{k+1}} + \rvec{0 \\ -m g}
+\]
+Where $M = m I_2$, $\vec{\hat n} = \rvec{0 \\ 1}$, $\vec{d _1} = \rvec{1 \\ 0}$, and $\vec{d _2} = \rvec{-1 \\ 0}$. We can write more compactly:
+\[
+    M (\vec{v_{k+1}} - \vec{v_k}) - \vec{\hat n} \cdot \lambda^c _{k+1} - D \vec{\lambda^f_{k+1}} = \vec{u_{k+1}} + \rvec{0 \\ -m g}
+\]
+
+With D containing the $\vec{d}$ vectors stacked as columns and $\vec{\lambda^f_{k+1}} = \rvec{\lambda^+_{k+1} & \lambda^-_{k+1}}$.
+
+And now have the following complimentarity constraints:
+\begin{align*}
+    0 \leq \vec{\hat n}^T \vec{v_{k+1}} & \perp \lambda^c_{k+1} \geq 0 \quad \textrm{nonpenetration, assumes contact established} \\
+   0 \leq \lambda^+_{k+1} &\perp \gamma_{k+1} + \vec{d_1}^T \vec{v_{k+1}} \geq 0 \quad \textrm{use positive friction force if block is moving to the left}\\
+   0 \leq \lambda^-_{k+1} &\perp \gamma_{k+1} + \vec{d_2}^T \vec{v_{k+1}} \geq 0 \quad \textrm{use negative friction force if block is moving to the right}\\
+    0 \leq \gamma_{k+1} &\perp \mu \lambda^c_{k+1} - \lambda^+_{k+1} - \lambda^-_{k+1} \geq 0 \quad \textrm{use max friction force if block is moving}
+\end{align*}
+
+This can be again simplified as:
+\begin{align*}
+    0 \leq \vec{\hat n}^T \vec{v_{k+1}} & \perp \lambda^c_{k+1} \geq 0 \\
+    0 \leq \vec{\lambda^f_{k+1}} &\perp \gamma_{k+1} \vec{e} + D \vec{v_{k+1}} \geq 0 \\
+    0 \leq \gamma_{k+1} &\perp \mu \lambda^c_{k+1} - \vec{e}^T \vec{\lambda^f_{k+1}} \geq 0
+\end{align*}
+
+Let's now formulate the Anitescu LCP:
+
+\[
+    \begin{bmatrix}
+        M & - \vec{\hat n} & -D & 0 \\
+        \vec{\hat n}^T & 0 & 0 & 0 \\
+        D^T & 0 & 0 & \vec{e} \\
+        0 & \mu & -\vec{e}^T & 0
+    \end{bmatrix}
+    \begin{bmatrix}
+        \vec{v_{k+1}} \\
+        \lambda^c_{k+1} \\
+        \vec{\lambda^f_{k+1}} \\
+        \gamma_{k+1}
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        M \vec{v_k} + \rvec{0 \\ -m g} + \vec{u_{k+1}} \\
+        0 \\
+        0 \\
+        0
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 \\
+        w_1 \\
+        \vec{w_2} \\
+        w_3 \\
+    \end{bmatrix}
+\]
+\[
+    0 \leq 
+    \begin{bmatrix}
+        \lambda^c_{k+1} \\
+        \vec{\lambda^f_{k+1}} \\
+        \gamma_{k+1}
+    \end{bmatrix}, \quad
+    0 \leq 
+    \begin{bmatrix}
+        w_1 \\
+        \vec{w_2} \\
+        w_3
+    \end{bmatrix}, \quad
+    \begin{bmatrix}
+        \lambda^c_{k+1} &
+        \vec{\lambda^f_{k+1}}^T &
+        \gamma_{k+1}
+    \end{bmatrix}
+    \begin{bmatrix}
+        w_1 \\
+        \vec{w_2} \\
+        w_3
+    \end{bmatrix}
+    = 0
+\]
+
+Note that we can also include a constant $c$ in the second element of our vector to enforce a coefficient of restitution. Written out explicitely, we get an matrix:
+\[
+    \begin{bmatrix}
+        m & 0 & 0 & -1 & 1 & 0 \\
+        0 & m & -1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 & 0 & 0 \\
+        1 & 0 & 0 & 0 & 0 & 1 \\
+        -1 & 0 & 0 & 0 & 0 & 1 \\
+        0 & 0 & \mu & -1 & -1 & 0
+    \end{bmatrix}
+\]
+
+Let's now write out the matrices from Belbute-Peres:
+
+\begin{align*}
+    x &= -\vec{v_{k+1}} \\
+    z &= \rvec{\lambda^c_{k+1} \\ \vec{\lambda^f_{k+1}} \\ \gamma} \\
+    q &= - M \vec{v_k} + \rvec{0 \\ m g} - \vec{u_{k+1}} \\
+    M &=
+    \begin{bmatrix}
+        m & 0 \\
+        0 & m
+    \end{bmatrix} \\
+    G &= 
+    \begin{bmatrix}
+        \vec{\hat n}^T \\
+        D^T \\
+        0
+    \end{bmatrix} 
+    =
+    \begin{bmatrix}
+        0 & 1 \\
+        1 & 0 \\
+        -1 & 0 \\
+        0 & 0
+    \end{bmatrix} \quad \textrm{missing column of zeros since $A$ is empty} \\
+    F &=
+    \begin{bmatrix}
+        0 & 0 & 0 \\
+        0 & 0 & \vec{e} \\
+        \mu & -\vec{e}^T & 0
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 & 0 & 0 & 0 \\
+        0 & 0 & 0 & 1 \\
+        0 & 0 & 0 & 1 \\
+        \mu & -1 & -1 & 0
+    \end{bmatrix}
+\end{align*}
+
+The small $m$ vector (distinct from mass) is just zeros, and $A$ is an empty matrix.
 
 \section{Learning}
 We want to ultimately learn the dynamics for a full Kuka arm interacting with an object, but we start with just the sliding block example. The most obvious idea is to learn the unknown friction force $\lambda = f(\dot x, u)$ by fitting a neural network or some other function approximator to the raw data. However, this approach won't be able to properly capture sticking behavior. We need some way of embedding the complementary nature of the problem into our learning algorithm. 
@@ -689,7 +826,7 @@ We can now see that $1$ is just the friction force and this corresponds roughly 
 \subsection{Unknown frictional forces}
 What if we don't know the friction forces? Then we definitely need to solve an LCP on every training iteration for both the friction and velocities. Under the traditional framework, we would learn $\vec{f}$ and $G$, use those to solve for the friction forces, then calculate $\dot x_{k+1}$ from there. The issue here is, can we predict sticking and sliding if there is noise on $\vec{f}$ and $G$? I looked at this in \textit{lcp\_study.py}. It turns out if only single elements of $M$ and $\vec{q}$ are perturbed, the solution is usually stable (sticking is observed). However, as soon as we add random noise, this breaks down. When $u=0$ we sometimes coincidentally get the right answer if all the $\vec{q}$ elems are strictly positive (gives zero friction forces as trivial solution). However, as soon as $u \neq 0$, we need a precise nonzero friction force equal to $-u$ to induce sticking. Random noise makes this impossible. Let's look at one particular case more analytically:
 
-\subsubsection{Small $\vec{q}$ error}
+\subsubsection{Small $\vec{q}$ bias error}
 Let's start from our original traditional formulation equations, assuming $v_k = 0$ and $u_{k+1} = 0$, and including a small error $\epsilon > 0$ in $\vec{q}$:
 \begin{align*}
     0 \leq \lambda^+_{k+1} &\perp \gamma_{k+1} + v_{k+1} - \epsilon \geq 0\\
@@ -698,6 +835,29 @@ Let's start from our original traditional formulation equations, assuming $v_k =
 \end{align*}
 
 For the first complimentarity statement, we have two cases: either $\gamma_{k+1} + v_{k+1} - \epsilon \geq 0$, or $\gamma_{k+1} + v_{k+1} - \epsilon = 0$. Assume the second case. Then we can substitute into the RHS inequality of the second complimentarity condition to get $\gamma_{k+1} \geq \frac{\epsilon}{2}$. Let's again assume that this is a hard equality; i.e. $\gamma_{k+1} = \frac{\epsilon}{2}$. We now want to show that the remaining inequalities can be satisfied. Since $\gamma_{k+1} > 0$, we know $m g \mu = \lambda^+_{k+1} + \lambda^-_{k+1}$. Setting $m g \mu = \lambda^+_{k+1}$ and $\lambda^-_{k+1} = 0$ satisfies the LCP. Therefore, we have shown that a small error $-\epsilon$ in the first element of $\vec{q}$ produces a valid solution with $v_{k+1} = \gamma_{k+1} = \frac{\epsilon}{2}$. 
+
+\subsubsection{Antisymmetric $\vec{q}$ weights}
+Consider the following system, with $\alpha_1 \neq \alpha_2$:
+\begin{align*}
+    0 \leq \lambda^+_{k+1} &\perp \gamma_{k+1} + v_k + \lambda^+_{k+1} - \lambda^-_{k+1} + \alpha_1 u_{k+1} \geq 0 \\
+    0 \leq \lambda^-_{k+1} &\perp \gamma_{k+1} - v_k - \lambda^+_{k+1} + \lambda^-_{k+1} - \alpha_2 u_{k+1} \geq 0 \\
+    0 \leq \gamma_{k+1} &\perp m g \mu - \lambda^+_{k+1} - \lambda^-_{k+1} \geq 0
+\end{align*}
+
+Now let's analyze the case where $v_k = 0$ and $0 < u << m g \mu$, so we would expect sticking. Let's assume then that the second RHS inequality holds with equality (since $\lambda^-_{k+1} > 0$ for sticking):
+
+\begin{align*}
+    \gamma_{k+1} - \lambda^+_{k+1} + \lambda^-_{k+1} - \alpha_2 u_{k+1} &= 0 \\
+    \lambda^+_{k+1} - \lambda^-_{k+1} &= \gamma_{k+1} - \alpha_2 u_{k+1}
+\end{align*}
+
+We can then sub that into the first inequality:
+\begin{align*}
+    \gamma_{k+1} + \gamma_{k+1} - \alpha_2 u_{k+1} + \alpha_1 u_{k+1} &\geq 0 \\
+    \gamma_{k+1} &\geq \frac{\alpha_2 - \alpha_1}{2} u_{k+1}
+\end{align*}
+
+Which means that if $\alpha_2 > \alpha_1$ we no longer have sticking. I imagine if $u$ is negative we would lose sticking the other way.
 
 \subsubsection{Traditional formulation}
 Following the traditional formulation of the LCP we can let our decision variables be:
@@ -723,5 +883,6 @@ Furthermore, I don't think the traditional way is capable of encoding sticking. 
     \item Generalizing direct formulation to non-full-rank jacobian scenarios
     \item Relu into each element of $M$ (one pos, one neg) -> learn exact zeros in $M$
     \item Use gamma to determine sticking? Doesn't actually work that well
+    \item Learn $D$ matrix!
 \end{itemize}
 \end{document}
