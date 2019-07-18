@@ -880,32 +880,38 @@ Furthermore, I don't think the traditional way is capable of encoding sticking. 
 \subsubsection{Bilevel optimization formulation}
 I did some experiments differentiating through the solution of an LCP using Zico's stuff. The basic issue was that if you overestimate $\mu$, for example, any pertubations of $\mu$ might still cause sticking. We therefore should try to relax the hard inequality constraints and turn them into soft inequality constraints in the inner optimization (with hard inequality $\lambda_i \geq 0$):
 
+\[
+      &\min _{f,G} \sum_i \min_{\lambda_i} \alpha_1 prederror(x_i, \lambda_i) + \alpha_2 \lambda_i^T (G \lambda_i + f) + \alpha_3 \l (G \lambda_i + f) \\
+\]
+
+Where $l$ is the hinge loss function penalizing negativity. We can now write each of these terms individually in quadratic form:
 \begin{align*}
-      &\min _{f,G} \sum_i \min_{\lambda_i} \alpha_1 prederror(x_i, \lambda_i) + \alpha_2 \lambda_i (G \lambda_i + f) + \alpha_3 \l (G \lambda_i + f) \\
-= &\min _{f,G} \sum_i \min_{\lambda_i} \alpha_1 \left(v_{k + 1} - (v_k + \lambda^+_i - \lambda^-_i + u_i)\right)^2 + \alpha_2 \lambda_i^T G \lambda_i + \alpha_2 f^T \lambda_i + (G\lambda_i + f)^T (G \lambda_i + f) \\
-  &\textrm{Write $\beta_i = v_{k+1} - v_k + u_i$: } \\
-= &\min _{f,G} \sum_i \min_{\lambda_i} \alpha_1 \left(\beta_i + \lambda^+_i - \lambda^-_i\right)^2 + \alpha_2 \lambda_i^T G \lambda_i + \alpha_2 f^T \lambda_i + (\lambda_i^TG^T + f^T) (G \lambda_i + f) \\
-= &\min _{f,G} \sum_i \min_{\lambda_i} \alpha_1 \left(\beta_i^2 + \lambda^+_i^2 + \lambda^-_i^2 + 2\beta_i \lambda^+_i - 2 \beta_i \lambda^-_i \right - 2\lambda^+_i \lambda^-_i) 
-    + \alpha_2 \lambda_i^T G \lambda_i + \alpha_2 f^T \lambda_i + 
-      (\lambda_i^TG^T G \lambda_i + f^T G \lambda_i + \lambda_i^TG^T f + f^T f) \\
+    prederror(x_i, \lambda_i) = &\left(v_{k + 1} - (v_k + \lambda^+_i - \lambda^-_i + u_i)\right)^2 \\
+  &\textrm{Write $\beta_i = v_{k+1} - v_k - u_i$: } \\
+    = &\left(\beta_i - \lambda^+_i + \lambda^-_i\right)^2 \\
+= &\beta_i^2 + \lambda^+_i^2 + \lambda^-_i^2 - 2\beta_i \lambda^+_i + 2 \beta_i \lambda^-_i - 2\lambda^+_i \lambda^-_i \\
   &\textrm{Drop $\beta_i^2$ since it doesn't matter: } \\
-= &\min _{f,G} \sum_i \min_{\lambda_i} \alpha_1 \left(\lambda^+_i^2 + \lambda^-_i^2 + 2\beta_i \lambda^+_i - 2 \beta_i \lambda^-_i \right - 2\lambda^+_i \lambda^-_i) 
-    + \alpha_2 \lambda_i^T G \lambda_i + \alpha_2 f^T \lambda_i + 
-      (\lambda_i^TG^T G \lambda_i + f^T G \lambda_i + \lambda_i^TG^T f + f^T f) \\
-  &\textrm{Move $f$s out in front, $n$ is num samples: } \\
-    = &\min _{f,G} n f^T f + \sum_i \min_{\lambda_i} \alpha_1 \lambda_i^T 
+    = &\lambda_i^T 
         \begin{bmatrix} 1 & -1 & 0 \\ -1 & 1 & 0 \\ 0 & 0 & 0 \end{bmatrix} 
-        \lambda_i + \alpha_1 \rvec{2 \beta_i & -2 \beta_i & 0} \lambda_i
-    + \alpha_2 \lambda_i^T G \lambda_i + \alpha_2 f^T \lambda_i + 
-        (\lambda_i^TG^T G \lambda_i + f^T G \lambda_i + f^T G \lambda_i) \\
-    = &\min _{f,G} n f^T f + \sum_i \min_{\lambda_i} \lambda_i^T 
-    \left( \alpha_1 \begin{bmatrix} 1 & -1 & 0 \\ -1 & 1 & 0 \\ 0 & 0 & 0 \end{bmatrix}
-        + \alpha_2 G + \alpha_3 G^T G 
-    \right)
-    \lambda_i + \left(\alpha_1 \rvec{2 \beta_i & -2 \beta_i & 0} + \alpha_2 f^T + 2 \alpha_3 f^T G\right) \lambda_i \\
+        \lambda_i + \rvec{-2 \beta_i & 2 \beta_i & 0} \lambda_i
 \end{align*}
 
-Note I gave up on tracking $\alpha_3$ through the algebra. Wait, we definitely want hinge loss on the nonnegativity constraint...
+Complementarity:
+\begin{align*}
+    \lambda_i^T(G \lambda_i + f) &= \lambda_i^T G \lambda_i + f^T \lambda_i
+\end{align*}
+
+For nonnegativity we need to introduce a slack variable $s$ of the same size as $\lambda_i$. Then we can add the following to our program:
+\begin{align*}
+    \min_{\lambda_i, s} \quad &s \\
+    -(G \lambda_i + f) \leq &s \\
+    0 \leq &s
+\end{align*}
+
+This demands that we pad our previous matrices with zeros to incorporate the new elements. Alternatively, we can leave this as a hard constraint:
+\[
+    G \lambda_i + f \geq 0
+\]
 
 \section{Random ideas}
 \begin{itemize}
