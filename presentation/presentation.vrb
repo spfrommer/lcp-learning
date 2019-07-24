@@ -1,0 +1,23 @@
+\frametitle{Utilities for writing generalized algorithms}
+    \begin{itemize}
+        \item Get\_x and get\_y for points (legacy point objects have different ways of accessing x and y)
+        \item Typedef for child geometries (e.g., ring\_type in Polygon)
+            \begin{itemize}
+                \item Useful if you want to add a ring to a generalized Polygon or something along those lines
+            \end{itemize}
+    \end{itemize}
+    \begin{lstlisting}[language=C++, basicstyle=\tiny]
+template <typename Poly>
+void frankenstein(Poly* poly)
+{
+    typename Poly::point_type point(get_x((*poly).outer()[0]) + 5,
+                                    get_y((*poly).outer()[0]));
+    cout << boost::geometry::dsv(point) << endl;
+    typename Poly::ring_type ring;
+    boost::geometry::read_wkt("POLYGON((0 0, 0 4, 2 0))", ring);
+    poly->inners().push_back(std::move(ring));
+}
+...
+GridLinePoly90 poly({GridLineRing90({{0,0}})});
+frankenstein(&poly);
+    \end{lstlisting}

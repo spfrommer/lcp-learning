@@ -1,0 +1,4 @@
+\beamer@endinputifotherversion {3.36pt}
+\beamer@sectionintoc {1}{Manipulation overview}{3}{0}{1}
+\beamer@sectionintoc {2}{API structure}{14}{0}{2}
+\beamer@sectionintoc {3}{Boundary extraction}{19}{0}{3}

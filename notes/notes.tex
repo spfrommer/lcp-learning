@@ -908,6 +908,24 @@ For nonnegativity we need to introduce a slack variable $s$ of the same size as 
     0 \leq &s
 \end{align*}
 
+The second constraint can be reformulated as:
+\begin{align*}
+    -G \lambda_i - s \leq & f \\
+    -
+    \begin{bmatrix}
+        G, I
+    \end{bmatrix}
+    \begin{bmatrix}
+        \lambda^+\\
+        \lambda^-\\
+        \gamma \\
+        s_1 \\
+        s_2 \\
+        s_3
+    \end{bmatrix}
+    \leq &f
+\end{align*}
+
 This demands that we pad our previous matrices with zeros to incorporate the new elements. Alternatively, we can leave this as a hard constraint:
 \[
     G \lambda_i + f \geq 0
