@@ -889,7 +889,7 @@ Where $l$ is the hinge loss function penalizing negativity. We can now write eac
     prederror(x_i, \lambda_i) = &\left(v_{k + 1} - (v_k + \lambda^+_i - \lambda^-_i + u_i)\right)^2 \\
   &\textrm{Write $\beta_i = v_{k+1} - v_k - u_i$: } \\
     = &\left(\beta_i - \lambda^+_i + \lambda^-_i\right)^2 \\
-= &\beta_i^2 + \lambda^+_i^2 + \lambda^-_i^2 - 2\beta_i \lambda^+_i + 2 \beta_i \lambda^-_i - 2\lambda^+_i \lambda^-_i \\
+    = &\beta_i^2 + (\lambda^+_i) ^2 + (\lambda^-_i)^2 - 2\beta_i \lambda^+_i + 2 \beta_i \lambda^-_i - 2\lambda^+_i \lambda^-_i \\
   &\textrm{Drop $\beta_i^2$ since it doesn't matter: } \\
     = &\lambda_i^T 
         \begin{bmatrix} 1 & -1 & 0 \\ -1 & 1 & 0 \\ 0 & 0 & 0 \end{bmatrix} 
