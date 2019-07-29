@@ -893,7 +893,8 @@ Where $l$ is the hinge loss function penalizing negativity. We can now write eac
   &\textrm{Drop $\beta_i^2$ since it doesn't matter: } \\
     = &\lambda_i^T 
         \begin{bmatrix} 1 & -1 & 0 \\ -1 & 1 & 0 \\ 0 & 0 & 0 \end{bmatrix} 
-        \lambda_i + \rvec{-2 \beta_i & 2 \beta_i & 0} \lambda_i
+        \lambda_i + \rvec{-2 \beta_i & 2 \beta_i & 0} \lambda_i \\
+    = &\lambda_i^T D \lambda_i + b \lambda_i
 \end{align*}
 
 Complementarity:
@@ -930,6 +931,30 @@ This demands that we pad our previous matrices with zeros to incorporate the new
 \[
     G \lambda_i + f \geq 0
 \]
+
+Finally, we need to turn this into a QP (with PSD matrix). To do that, we can take our $G + D$ matrix and add it to its transpose (dividing by two at the end). One question is how we can guarantee this to have nonnegative eigenvalues.
+
+\subsubsection{Bilevel optimization results with simple system}
+\textbf{With hard nonnegativity constraint: } Varying $\mu$ leads to stable convergence to $\mu=1$ on a single data point until $\mu >= 7$ with $\dot x_k = 1$, $\dot x_{k+1} = 2$, $u = 2$. Let's try to figure out why. Take $Q = M + D$. Then we have the following lower-level program (for 1 data point, this is the entire program):
+
+\begin{align*}
+    \min _{\lambda_i \geq 0} \quad & \frac{1}{2} \lambda_i^T (Q + Q^T)  \lambda_i + (q^T + b) \lambda_i \\
+                                   &M \lambda_i + q \geq 0 \\
+                                   & Q = M + D
+\end{align*}
+
+Let's write out $\frac{1}{2} (Q + Q^T)$:
+\begin{align*}
+    M + D &= \begin{bmatrix} 2 & -2 & 1 \\ -2 & 2 & 1 \\ -1 & -1 & 0 \end{bmatrix} \\
+    \frac{1}{2} (Q + Q^T) &= \begin{bmatrix} 2 & -2 & 0 \\ -2 & 2 & 0 \\ 0 & 0 & 0 \end{bmatrix}
+\end{align*}
+
+Note we might multiply by 2 to get factor of $\frac{1}{2}$ in front of quadratic term.
+
+\begin{align*}
+    q^T + b &= \rvec{3 & -3 & \mu} + \rvec{2 & -2 & 0} \\
+            &= \rvec{5 & -5 & \mu}
+\end{align*}
 
 \section{Random ideas}
 \begin{itemize}
