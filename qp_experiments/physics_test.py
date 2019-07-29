@@ -25,7 +25,6 @@ class PhysicsNet(torch.nn.Module):
         us = torch.unsqueeze(data[:, 2], 1)
 
         mu = self.mu
-        #mu = torch.tensor([1.0])
 
         beta = vnexts - vs - us
 
@@ -60,7 +59,7 @@ class PhysicsNet(torch.nn.Module):
 
         a1 = 1
         a2 = 1
-        a3 = 1
+        a3 = 100
 
         Q = 2 * a1 * A + 2 * a2 * Gpad
         p = a1 * b + a2 * fpad + a3 * slack_penalty
@@ -75,8 +74,9 @@ class PhysicsNet(torch.nn.Module):
         # Constrain G lambda + s >= 0
         # Should not have second negative here?
         I = torch.eye(3).repeat(n, 1, 1)
-        R = torch.cat((R, -torch.cat((G, -I), 2)), 1)
-
+        R = torch.cat((R, -torch.cat((G, I), 2)), 1)
+        
+        # This is the same with soft or hard nonnegativity constraint
         h = torch.cat((h, f), 1)
 
         Qmod = 0.5 * (Q + Q.transpose(1, 2)) + 0.001 * torch.eye(6).repeat(n, 1, 1)
@@ -110,27 +110,19 @@ class PhysicsNet(torch.nn.Module):
         return res.x
 
 
-
-#print(QPFunction()(torch.tensor([[1.0]]), torch.tensor([1.0]), 
-#                torch.tensor([[1.0]]), torch.tensor([5.0]), 
-#                torch.tensor([]), torch.tensor([])))
-#print(net.scipy_optimize(torch.tensor([[1.0]]), torch.tensor([[1.0]]), 
-#                torch.tensor([1.0]), torch.tensor([[5.0]])))
-
 # Previous vel, next vel, u
-data = torch.tensor([[1.0, 2.0, 2.0],
-                     [2.0, 3.0, 2.0]])
+data = torch.tensor([[2.0, 3.0, 2.0]])
 
 evolutions = []
 #for startmu in np.linspace(0.1, 10, num=30):
-for startmu in [10.]:
+for startmu in [9.0]:
     net = PhysicsNet(startmu)
 
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 
     evolution = []
-    for epoch in range(100):
+    for epoch in range(10000):
         # Zero the gradients
         optimizer.zero_grad()
 
@@ -145,7 +137,7 @@ for startmu in [10.]:
         loss.backward()
         
         # Update the parameters
-        #optimizer.step()
+        # optimizer.step()
         for p in net.parameters():
             if p.requires_grad:
                 p.data.add_(0.1, -p.grad.data)
