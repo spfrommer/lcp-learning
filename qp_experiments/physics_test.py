@@ -27,15 +27,20 @@ class PhysicsNet(torch.nn.Module):
         mu = self.mu
 
         beta = vnexts - vs - us
+        
+        pad_base = torch.zeros(6)
 
         G = torch.tensor([[1.0, -1, 1], [-1, 1, 1], [-1, -1, 0]]).repeat(n, 1, 1)
-
-        Gpad = torch.tensor([[1.0, -1, 1, 0, 0, 0],
-                             [-1, 1, 1, 0, 0, 0],
-                             [-1, -1, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0]]).repeat(n, 1, 1)
+        
+        Gpad = torch.tensor([[1.0, -1, 1, 0, 0, 0, 0, 0, 0],
+                             [-1, 1, 1, 0, 0, 0, 0, 0, 0],
+                             [-1, -1, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0]]).repeat(n, 1, 1)
         
         fmats = torch.tensor([[1.0, 1, 0], 
                               [-1, -1, 0],
@@ -43,43 +48,51 @@ class PhysicsNet(torch.nn.Module):
         fvecs = torch.cat((vs, us, mu * torch.ones(vs.shape)), 1).unsqueeze(2)
         f = torch.bmm(fmats, fvecs)
         batch_zeros = torch.zeros(f.shape)
-        fpad = torch.cat((f, batch_zeros), 1)
+        fpad = torch.cat((f, batch_zeros, batch_zeros), 1)
         
         # For prediction error
-        A = torch.tensor([[1.0, -1, 0, 0, 0, 0],
-                          [-1, 1, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0]]).repeat(n, 1, 1)
+        A = torch.tensor([[1.0, -1, 0, 0, 0, 0, 0, 0, 0],
+                          [-1, 1, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0]]).repeat(n, 1, 1)
         beta_zeros = torch.zeros(beta.shape)
-        b = torch.cat((-2 * beta, 2 * beta, beta_zeros, beta_zeros, beta_zeros, beta_zeros), 1).unsqueeze(2)
+        b = torch.cat((-2 * beta, 2 * beta, beta_zeros, beta_zeros, beta_zeros, 
+                       beta_zeros, beta_zeros, beta_zeros, beta_zeros), 1).unsqueeze(2)
         
-        slack_penalty = torch.tensor([0.0, 0, 0, 1, 1, 1]).repeat(n, 1).unsqueeze(2)
+        inequality_slack_penalty = torch.tensor([0.0, 0, 0, 1, 1, 1, 0, 0, 0]).repeat(n, 1).unsqueeze(2)
+        lambdas_slack_penalty = torch.tensor([0.0, 0, 0, 0, 0, 0, 1, 1, 1]).repeat(n, 1).unsqueeze(2)
 
         a1 = 1
         a2 = 1
         a3 = 100
+        a4 = 100
 
         Q = 2 * a1 * A + 2 * a2 * Gpad
-        p = a1 * b + a2 * fpad + a3 * slack_penalty
+        p = a1 * b + a2 * fpad + a3 * inequality_slack_penalty + a4 * lambdas_slack_penalty
         
-        # Constrain lambda and slacks to be >= 0
-        R = -torch.eye(6).repeat(n, 1, 1)
+        # Constrain slacks (but not lambdas) to be >= 0
+        R = torch.cat((torch.zeros(6, 3), -torch.eye(6)), 1).repeat(n, 1, 1)
         h = torch.zeros((1, 6)).repeat(n, 1).unsqueeze(2)
 
         # Constrain G lambda + f >= 0
         #R = torch.cat((R, -G))
 
-        # Constrain G lambda + s >= 0
-        # Should not have second negative here?
+        # Constrain G lambda + s(1:3) >= 0
         I = torch.eye(3).repeat(n, 1, 1)
-        R = torch.cat((R, -torch.cat((G, I), 2)), 1)
-        
+        R = torch.cat((R, -torch.cat((G, I, torch.zeros(n,3,3)), 2)), 1)
         # This is the same with soft or hard nonnegativity constraint
         h = torch.cat((h, f), 1)
+        
+        # Constrain lambda + s(4:7) >= 0
+        R = torch.cat((R, -torch.cat((I, torch.zeros(n, 3, 3), I), 2)), 1)
+        h = torch.cat((h, torch.zeros(1, 3, 1)), 1)
 
-        Qmod = 0.5 * (Q + Q.transpose(1, 2)) + 0.001 * torch.eye(6).repeat(n, 1, 1)
+        Qmod = 0.5 * (Q + Q.transpose(1, 2)) + 0.001 * torch.eye(9).repeat(n, 1, 1)
         
         z = QPFunction(check_Q_spd=False)(Qmod, p.squeeze(2), R, h.squeeze(2), torch.tensor([]), torch.tensor([]))
 
@@ -115,7 +128,7 @@ data = torch.tensor([[2.0, 3.0, 2.0]])
 
 evolutions = []
 #for startmu in np.linspace(0.1, 10, num=30):
-for startmu in [9.0]:
+for startmu in [5.0]:
     net = PhysicsNet(startmu)
 
     loss_func = torch.nn.MSELoss()
