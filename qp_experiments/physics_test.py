@@ -13,6 +13,9 @@ from scipy.optimize import LinearConstraint
 
 import pdb
 
+soft_lambdas = False
+soft_nonnegativity = False
+
 class PhysicsNet(torch.nn.Module):
     def __init__(self, startmu):
         super().__init__()
@@ -67,7 +70,7 @@ class PhysicsNet(torch.nn.Module):
         inequality_slack_penalty = torch.tensor([0.0, 0, 0, 1, 1, 1, 0, 0, 0]).repeat(n, 1).unsqueeze(2)
         lambdas_slack_penalty = torch.tensor([0.0, 0, 0, 0, 0, 0, 1, 1, 1]).repeat(n, 1).unsqueeze(2)
 
-        a1 = 1
+        a1 = 10
         a2 = 1
         a3 = 100
         a4 = 100
@@ -79,56 +82,44 @@ class PhysicsNet(torch.nn.Module):
         R = torch.cat((torch.zeros(6, 3), -torch.eye(6)), 1).repeat(n, 1, 1)
         h = torch.zeros((1, 6)).repeat(n, 1).unsqueeze(2)
 
-        # Constrain G lambda + f >= 0
-        #R = torch.cat((R, -G))
-
-        # Constrain G lambda + s(1:3) >= 0
         I = torch.eye(3).repeat(n, 1, 1)
-        R = torch.cat((R, -torch.cat((G, I, torch.zeros(n,3,3)), 2)), 1)
+
+        if soft_nonnegativity:
+            # Constrain G lambda + s(1:3) >= 0
+            R = torch.cat((R, -torch.cat((G, I, torch.zeros(n, 3, 3)), 2)), 1)
+        else:
+            # Constrain G lambda + f >= 0
+            R = torch.cat((R, torch.cat((-G, torch.zeros(n, 3, 6)), 2)), 1)
+
         # This is the same with soft or hard nonnegativity constraint
         h = torch.cat((h, f), 1)
         
-        # Constrain lambda + s(4:7) >= 0
-        R = torch.cat((R, -torch.cat((I, torch.zeros(n, 3, 3), I), 2)), 1)
-        h = torch.cat((h, torch.zeros(1, 3, 1)), 1)
+        if soft_lambdas:
+            # Constrain lambda + s(4:7) >= 0
+            R = torch.cat((R, -torch.cat((I, torch.zeros(n, 3, 3), I), 2)), 1)
+            h = torch.cat((h, torch.zeros(n, 3, 1)), 1)
+        else:
+            # Constrain lambda >= 0
+            R = torch.cat((R, torch.cat((-I, torch.zeros(n, 3, 6)), 2)), 1)
+            h = torch.cat((h, torch.zeros(n, 3, 1)), 1)
 
         Qmod = 0.5 * (Q + Q.transpose(1, 2)) + 0.001 * torch.eye(9).repeat(n, 1, 1)
         
         z = QPFunction(check_Q_spd=False)(Qmod, p.squeeze(2), R, h.squeeze(2), torch.tensor([]), torch.tensor([]))
 
-        #print(self.scipy_optimize(0.5 * (Q + Q.transpose(0, 1)), p, R, h))
-        #assert(torch.all(torch.matmul(R, z.transpose(0, 1)) \
-        #                <= (h.transpose(0, 1) + torch.ones(h.shape) * 1e-5)))
-
         lcp_slack = torch.bmm(Gpad, z.unsqueeze(2)) + fpad
 
         costs = 0.5 * torch.bmm(z.unsqueeze(1), torch.bmm(Qmod, z.unsqueeze(2))) \
                 + torch.bmm(p.transpose(1, 2), z.unsqueeze(2)) + a1 * beta**2
-
+        
         return sum(costs)
 
-    def scipy_optimize(self, Q, p, R, h):
-        Qnp = Q.numpy()
-        pnp = p.numpy()
-        Rnp = R.numpy()
-        hnp = h.numpy()
-
-        def fun(z):
-            return 0.5 * np.matmul(z, np.matmul(Q, z)) + np.matmul(p, z)
-        
-        linear_constraint = LinearConstraint(Rnp, 
-                [-np.inf, -np.inf, -np.inf, -np.inf, -np.inf, -np.inf], hnp[0])
-        res = minimize(fun, [1, 1, 1], method='trust-constr', constraints=[linear_constraint])
-
-        return res.x
-
-
 # Previous vel, next vel, u
-data = torch.tensor([[2.0, 3.0, 2.0]])
+data = torch.tensor([[1.0, 2.0, 2.0], [2.0, 3.0, 2.0]])
 
 evolutions = []
 #for startmu in np.linspace(0.1, 10, num=30):
-for startmu in [5.0]:
+for startmu in [30.0]:
     net = PhysicsNet(startmu)
 
     loss_func = torch.nn.MSELoss()
