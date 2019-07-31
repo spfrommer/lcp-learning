@@ -934,12 +934,36 @@ This demands that we pad our previous matrices with zeros to incorporate the new
 
 Finally, we need to turn this into a QP (with PSD matrix). To do that, we can take our $G + D$ matrix and add it to its transpose (dividing by two at the end). One question is how we can guarantee this to have nonnegative eigenvalues.
 
+\subsubsection{Preventing sticking}
+If we know a data point is supposed to be sliding, let's see if we can impose an extra cost that should encourage $\gamma > 0$ (giving us gradients for $\mu$). Such a cost might be penalize deviation from the boundary of the friction cone:
+
+\begin{align*}
+      &(m g \mu - \lambda^+ - \lambda^-)^2 \\
+    = & (m g \mu)^2 + (\lambda^+) ^2 + (\lambda^-) ^2 - 2 m g \mu \lambda^+ - 2 m g \mu \lambda^- + 2 \lambda^+ \lambda^-
+\end{align*}
+
+We can drop the $(m g \mu)^2$ to write this as:
+\begin{align*}
+    \lambda^T
+    \begin{bmatrix}
+        1 & 1 & 0 \\
+        1 & 1 & 0 \\
+        0 & 0 & 0
+    \end{bmatrix}
+    \lambda + 
+    \begin{bmatrix}
+        -2 m g \mu & -2 m g \mu & 0
+    \end{bmatrix}
+    \lambda
+\end{align*}
+
+
 \subsubsection{Bilevel optimization results with simple system}
 \textbf{With hard nonnegativity constraint: } Varying $\mu$ leads to stable convergence to $\mu=1$ on a single data point until $\mu >= 7$ with $\dot x_k = 1$, $\dot x_{k+1} = 2$, $u = 2$. Let's try to figure out why. Take $Q = M + D$. Then we have the following lower-level program (for 1 data point, this is the entire program):
 
 \begin{align*}
-    \min _{\lambda_i \geq 0} \quad & \frac{1}{2} \lambda_i^T (Q + Q^T)  \lambda_i + (q^T + b) \lambda_i \\
-                                   &M \lambda_i + q \geq 0 \\
+    \min _{\lambda \geq 0} \quad & \frac{1}{2} \lambda^T (Q + Q^T)  \lambda + (q^T + b) \lambda \\
+                                   &M \lambda + q \geq 0 \\
                                    & Q = M + D
 \end{align*}
 
@@ -952,9 +976,22 @@ Let's write out $\frac{1}{2} (Q + Q^T)$:
 Note we might multiply by 2 to get factor of $\frac{1}{2}$ in front of quadratic term.
 
 \begin{align*}
-    q^T + b &= \rvec{3 & -3 & \mu} + \rvec{2 & -2 & 0} \\
-            &= \rvec{5 & -5 & \mu}
+    q^T + b &= \rvec{v_k + u_{k+1} \\ -v_k - u_{k+1} \\ \mu} + 
+    \rvec{-2 (v_{k+1} - v_k - u_{k+1}) \\ 2 (v_{k+1} - v_k - u_{k+1}) \\ 0} \\
+            &= \rvec{-2 v_{k+1} + 3 v_k + 3 u_{k+1} \\
+                     2 v_{k+1} - 3 v_k - 3 u_{k+1} \\ \mu}
 \end{align*}
+
+Now we can multiply this out as:
+\begin{align*}
+  &\frac{1}{2} \lambda^T (Q + Q^T)  \lambda + (q^T + b) \lambda \\
+    = & \lambda^T \rvec{2 \lambda^+ - 2 \lambda^- \\ -2 \lambda^+ + 2 \lambda^- \\ 0} + \lambda^+ (-2 v_{k+1} + 3 v_k + 3 u_{k+1}) + \lambda^- (2 v_{k+1} - 3 v_k - 3 u_{k+1}) + \gamma \mu \\
+    = & 2 (\lambda^+) ^2 - 4 \lambda^+ \lambda^- + 2 (\lambda^-) ^2+ \lambda^+ (-2 v_{k+1} + 3 v_k + 3 u_{k+1}) + \lambda^- (2 v_{k+1} - 3 v_k - 3 u_{k+1}) + \gamma \mu
+\end{align*}
+
+\begin{remark}
+    In experiments, as I increase $\mu$, $\gamma$ decreases, reaching zero at $\mu = 7$. Clearly, once $\gamma = 0$, the gradient with respect to $\mu$ ends up being zero (since $\mu$ only appears in a term multiplied by $\gamma$). Another thing that happens is the LCP slack term corresponding to $\lambda^+$ goes to zero at $\mu = 7$ (but $\lambda^+$ stays equal to zero). This corresponds to the first row in the QP inequality constraint, which now becomes a hard equality.
+\end{remark}
 
 \section{Random ideas}
 \begin{itemize}
