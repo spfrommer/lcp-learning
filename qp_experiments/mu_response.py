@@ -16,7 +16,8 @@ import pdb
 
 soft_nonnegativity = False
 soft_lambdas = False
-force_max_dissipation = True
+force_max_dissipation_qp = False
+force_max_dissipation_ext = True
 
 def physics_variables(mu, data):
     n = data.shape[0]
@@ -67,9 +68,9 @@ def physics_variables(mu, data):
 
     a1 = 1
     a2 = 1
-    a3 = 5
-    a4 = 5
-    a5 = 2
+    a3 = 50
+    a4 = 50
+    a5 = 1
 
     Q = 2 * a1 * A + 2 * a2 * Gpad
     p = a1 * b + a2 * fpad + a3 * inequality_slack_penalty + a4 * lambdas_slack_penalty
@@ -99,7 +100,7 @@ def physics_variables(mu, data):
         R = torch.cat((R, torch.cat((-I, torch.zeros(n, 3, 6)), 2)), 1)
         h = torch.cat((h, torch.zeros(n, 3, 1)), 1)
     
-    if force_max_dissipation:
+    if force_max_dissipation_qp:
         # Factor 2 for 1/2 in front of quadratic term
         max_dissipation_mat = a5 * 2 * torch.tensor([[1.0, 1, 0, 0, 0, 0, 0, 0, 0],
                                           [1, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -110,7 +111,7 @@ def physics_variables(mu, data):
                                           [0, 0, 0, 0, 0, 0, 0, 0, 0],
                                           [0, 0, 0, 0, 0, 0, 0, 0, 0],
                                           [0, 0, 0, 0, 0, 0, 0, 0, 0]]).repeat(n, 1, 1) 
-        max_dissipation_vec = a5 *torch.tensor([[-2 * mu, -2 * mu, 0, 0, 0, 0, 0, 0, 0]]).repeat(n, 1).unsqueeze(2) 
+        max_dissipation_vec = a5 * torch.tensor([[-2 * mu, -2 * mu, 0, 0, 0, 0, 0, 0, 0]]).repeat(n, 1).unsqueeze(2) 
 
         Q = Q + max_dissipation_mat
         p = p + max_dissipation_vec
@@ -125,27 +126,37 @@ def physics_variables(mu, data):
     costs = 0.5 * torch.bmm(z.unsqueeze(1), torch.bmm(Qmod, z.unsqueeze(2))) \
             + torch.bmm(p.transpose(1, 2), z.unsqueeze(2)) + a1 * beta**2
 
-    if force_max_dissipation:
+    if force_max_dissipation_qp:
         max_dissipation_const_cost = a5 * mu ** 2
         max_dissipation_cost = 0.5 * torch.bmm(z.unsqueeze(1), torch.bmm(max_dissipation_mat, z.unsqueeze(2))) \
             + torch.bmm(max_dissipation_vec.transpose(1, 2), z.unsqueeze(2)) + max_dissipation_const_cost
         # max dissipation cost is already in QP (just outputted for debugging), need to add const term
         costs = costs + torch.ones(costs.shape) * max_dissipation_const_cost
-    
+
+    if force_max_dissipation_ext:
+        lambda_plus = z[:, 0]
+        lambda_minus = z[:, 1]
+        mgmu = mu * torch.ones(lambda_plus.shape)
+
+        max_dissipation_cost = a5 * (mgmu - lambda_plus - lambda_minus) ** 2
+        costs = costs + max_dissipation_cost
+
     outputs = {'cost': sum(costs), 'lambdaPlus': z[0,0],
             'lambdaMinus': z[0, 1], 'gamma': z[0, 2],
             'slack[0]': lcp_slack[0,0], 'slack[1]': lcp_slack[0, 1],
             'slack[2]': lcp_slack[0, 2]}
     
-    if force_max_dissipation:
+    if force_max_dissipation_qp:
         outputs['max_diss_cost'] = max_dissipation_cost 
+    if force_max_dissipation_ext:
+        outputs['max_diss_cost'] = sum(max_dissipation_cost)
 
     return outputs
 
 # Previous vel, next vel, u
-data = torch.tensor([[1.0, 2.0, 2.0]])
+data = torch.tensor([[2.0, 3.0, 2.0]])
 
-mus = np.linspace(0.1, 10.0, num=100)
+mus = np.linspace(0.1, 5.0, num=200)
 variables = []
 
 for mu in mus:
