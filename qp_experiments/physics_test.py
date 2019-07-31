@@ -13,8 +13,8 @@ from scipy.optimize import LinearConstraint
 
 import pdb
 
-soft_lambdas = False
 soft_nonnegativity = False
+soft_lambdas = False
 
 class PhysicsNet(torch.nn.Module):
     def __init__(self, startmu):
@@ -70,7 +70,7 @@ class PhysicsNet(torch.nn.Module):
         inequality_slack_penalty = torch.tensor([0.0, 0, 0, 1, 1, 1, 0, 0, 0]).repeat(n, 1).unsqueeze(2)
         lambdas_slack_penalty = torch.tensor([0.0, 0, 0, 0, 0, 0, 1, 1, 1]).repeat(n, 1).unsqueeze(2)
 
-        a1 = 10
+        a1 = 1
         a2 = 1
         a3 = 100
         a4 = 100
@@ -112,14 +112,15 @@ class PhysicsNet(torch.nn.Module):
         costs = 0.5 * torch.bmm(z.unsqueeze(1), torch.bmm(Qmod, z.unsqueeze(2))) \
                 + torch.bmm(p.transpose(1, 2), z.unsqueeze(2)) + a1 * beta**2
         
+        pdb.set_trace()
         return sum(costs)
 
 # Previous vel, next vel, u
-data = torch.tensor([[1.0, 2.0, 2.0], [2.0, 3.0, 2.0]])
+data = torch.tensor([[1.0, 2.0, 2.0]])
 
 evolutions = []
 #for startmu in np.linspace(0.1, 10, num=30):
-for startmu in [30.0]:
+for startmu in [8.0]:
     net = PhysicsNet(startmu)
 
     loss_func = torch.nn.MSELoss()
