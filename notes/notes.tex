@@ -2,6 +2,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{parskip}
+\usepackage{float}
 \usepackage[margin=0.5in]{geometry}
 
 % Theorem definitions
@@ -527,6 +528,18 @@ Let's now write out the matrices from Belbute-Peres:
 
 The small $m$ vector (distinct from mass) is just zeros, and $A$ is an empty matrix.
 
+\subsection{Falling square (Stewart \& Trinkle)}
+Let's form the vectorization of Stewart \& Trinkle for a falling 2D square (although this will be general enough for any polygon. We will first write as a mixed lcp, ignore joint constraints:
+
+\begin{align*}
+    \begin{bmatrix}
+        M & \tilde n & -\tilde D & 0 \\
+        \tilde n ^T & 0 & 0 & 0
+    \end{bmatrix}
+\end{align*}
+
+
+
 \section{Learning}
 We want to ultimately learn the dynamics for a full Kuka arm interacting with an object, but we start with just the sliding block example. The most obvious idea is to learn the unknown friction force $\lambda = f(\dot x, u)$ by fitting a neural network or some other function approximator to the raw data. However, this approach won't be able to properly capture sticking behavior. We need some way of embedding the complementary nature of the problem into our learning algorithm. 
 
@@ -934,6 +947,17 @@ This demands that we pad our previous matrices with zeros to incorporate the new
 
 Finally, we need to turn this into a QP (with PSD matrix). To do that, we can take our $G + D$ matrix and add it to its transpose (dividing by two at the end). One question is how we can guarantee this to have nonnegative eigenvalues.
 
+\subsubsection{Why we get $\gamma = 0$}
+
+Let's think about why we get $\gamma = 0$ solutions at high $\mu$. If you look at our cost term, with soft inequality constraints we get some terms like:
+
+\begin{align*}
+    &\gamma (\mu - \lambda) + \l(\gamma \geq 0) + \lambda (\gamma - v_{k+1}) + \elpsilon \gamma^2 + \l (\gamma - v_{k+1}) \\
+    = &\gamma( (\mu - \lambda) +1 + \lambda + \epsilon \gamma - 1)
+\end{align*}
+
+With some weighting coefficients in front of them. Now here you can kind of intuit that if $\mu$ is large enough, you'd want to shrink $\gamma$. 
+
 \subsubsection{Preventing sticking}
 If we know a data point is supposed to be sliding, let's see if we can impose an extra cost that should encourage $\gamma > 0$ (giving us gradients for $\mu$). Such a cost might be penalize deviation from the boundary of the friction cone:
 
@@ -992,6 +1016,22 @@ Now we can multiply this out as:
 \begin{remark}
     In experiments, as I increase $\mu$, $\gamma$ decreases, reaching zero at $\mu = 7$. Clearly, once $\gamma = 0$, the gradient with respect to $\mu$ ends up being zero (since $\mu$ only appears in a term multiplied by $\gamma$). Another thing that happens is the LCP slack term corresponding to $\lambda^+$ goes to zero at $\mu = 7$ (but $\lambda^+$ stays equal to zero). This corresponds to the first row in the QP inequality constraint, which now becomes a hard equality.
 \end{remark}
+
+\subsubsection{Bilevel optimization graphs}
+\textbf{Soft complimentarity, hard nonnegativity, hard lambda}
+\begin{figure}[H]
+    \includegraphics[width=0.9\textwidth]{experiment1}
+\end{figure}
+
+\textbf{Soft complimentarity, soft nonnegativity, hard lambda}
+\begin{figure}[H]
+    \includegraphics[width=0.9\textwidth]{experiment2}
+\end{figure}
+
+\textbf{Soft complimentarity, hard nonnegativity, soft lambda}
+\begin{figure}[H]
+    \includegraphics[width=0.9\textwidth]{experiment3}
+\end{figure}
 
 \section{Random ideas}
 \begin{itemize}
