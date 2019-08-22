@@ -8,21 +8,21 @@
 %\usepackage{times}\usefonttheme{professionalfonts}  % obsolete
 %\usefonttheme[onlymath]{serif}
 \boldmath
-\usepackage[orientation=portrait,size=a0,scale=1.25,debug]{beamerposter}
+\usepackage[orientation=portrait,size=b1,scale=1.25,debug]{beamerposter}
 
 
 \usepackage{rigidmath}
 \usepackage{mathspec}
-\setmainfont{Times New Roman}
-\setsansfont[Ligatures=TeX, % recommended
-   UprightFont={* Light},
-   ItalicFont={* Light Italic},
-   BoldFont={*},
-   BoldItalicFont={* Italic}]{Open Sans}
-\setmainfont{Garamond Premier Pro}
-\setmathfont{Latin Modern Roman}
-\setmathfont[range=\mathit]{Latin Modern Roman}
-\setmathrm{Latin Modern Roman}
+%\setmainfont{Times New Roman}
+%\setsansfont[Ligatures=TeX, % recommended
+   %UprightFont={* Light},
+   %ItalicFont={* Light Italic},
+   %BoldFont={*},
+   %BoldItalicFont={* Italic}]{Open Sans}
+%\setmainfont{Garamond Premier Pro}
+%\setmathfont{Latin Modern Roman}
+%\setmathfont[range=\mathit]{Latin Modern Roman}
+%\setmathrm{Latin Modern Roman}
 %\usepackage[default,osfigures]{opensans}
 %\renewcommand\seriesdefault{l}
 %\renewcommand\bfdefault{m}
@@ -51,8 +51,10 @@
 \graphicspath{{figures/}}
  
 %\title{\fontspec{Garamond Premier Pro} { Modeling and Analysis of Non-unique Behaviors in Multiple Frictional Impacts }}
-\title{\fontspec{Garamond Premier Pro} {\noindent  \,MODELING AND ANALYSIS OF NON-UNIQUE\, \linebreak \mbox{\,BEHAVIORS} IN MULTIPLE FRICTIONAL IMPACTS\, \linebreak} }
-\author{Mathew Halm and Michael Posa}
+%\title{\fontspec{Garamond Premier Pro} {\noindent  \,MODELING AND ANALYSIS OF NON-UNIQUE\, \linebreak \mbox{\,BEHAVIORS} IN MULTIPLE FRICTIONAL IMPACTS\, \linebreak} }
+%\title{{\noindent  \,MODELING AND ANALYSIS OF NON-UNIQUE\, \linebreak \mbox{\,BEHAVIORS} IN MULTIPLE FRICTIONAL IMPACTS\, \linebreak} }
+\title{{\noindent  \,SAMPLE-EFFICIENT LEARNING OF \, \linebreak \,RIGID BODY DYNAMICS\, \linebreak} }
+\author{Samuel Pfrommer, Mathew Halm, Michael Posa}
 \institute[University of Pennsylvania]{DAIR Laboratory --- GRASP Laboratory --- University of Pennsylvania}
 \date{Feb. 12th, 2018}
 
@@ -76,51 +78,54 @@
             % ---------------------------------------------------------%
             % fill each column with content  
             \begin{block}{Motivation}
-  \color{penndkbl}
-		\begin{itemize}
-			\item Frictional contact is \textbf{the fundamental behavior} of robot locomotion and manipulation
-			\item Simultaneous frictional impacts between rigid bodies are \textbf{pervasive, extremely sensitive, and not well understood}
-			\item \textbf{We develop a simultaneous impact model that enables algorithms to reason about impacts' ambiguity}
-		\end{itemize}
-  \end{block}
+              \color{penndkbl}
+                    \begin{itemize}
+                        \item Current robots are stuck in repetitive, predictable environments
+                        \item Want to enable dynamic interaction with objects
+                        \item Frictional contact is fundamental to robot manipulation, but difficult to model
+                            \begin{itemize}
+                                \item Sudden changes in dynamics when making/breaking contact 
+                                \item Inconsistencies with Coulomb friction (Painlev\'{e} paradox)
+                                \item Many simultaneous contacts
+                                \item Stick/slip transitions
+                            \end{itemize}
+                    \end{itemize}
+              \end{block}
                       
-            \begin{block}{Key Examples}
-              \begin{center}
-              \textbf{Simple Model:}
-              Rimless Wheel
-              
-              \begin{figure}
-					\centering
-					\includegraphics[width=.3\hsize]{PostRimlessSystem}
-					\hspace{0.02\hsize}
-					\includegraphics[width=.3\hsize]{StoppedRimlessSystem}
-					\hspace{0.02\hsize}
-					\includegraphics[width=.3\hsize]{MirrorRimlessSystem}
-				\end{figure}	
-				A then B \hspace{0.18\textwidth} Simultaneous \hspace{0.18\textwidth} B then A
-				\vspace{3ex}
-				\begin{columns}[t]
-				\begin{column}{.49\textwidth}
-				\centering
-				\textbf{Complex Model:} RAMone \cite{Remy2017}
-				\begin{figure}
-				\centering
-					\includegraphics[width=.7\textwidth]{Remy2017}
-				\end{figure}
-				
-				\end{column}
-				\begin{column}{.49\textwidth}
-				\centering
-				\textbf{Real System:} Billiards
-				\begin{figure}
-				\centering
-					\includegraphics[width=.9\textwidth]{BilliardsBreak.jpg}
-				\end{figure}
+            \begin{block}{Prior Work}
+                \begin{columns}[t]
+                    \begin{column}{0.3\textwidth}
+                        \textbf{Learned}
+                        \begin{itemize}
+                            \item Often in context of policy learning
+                            \item Slow and data innefficient
+                            \item Doesn't use existing knowledge of contact dynamics
+                        \end{itemize}
+                    \end{column}
 
-				\end{column}
-				\end{columns}
-			 \end{center}
-			 \vspace{1ex}
+                    \begin{column}{0.3\textwidth}
+                        \textbf{Hybrid}
+                        \begin{itemize}
+                            \item Best of both worlds
+                        \end{itemize}
+                        \begin{center}
+                            \textit{Approaches:}
+                        \end{center}
+                        \begin{itemize}
+                            \item Sim-to-real
+                            \item Residual physics
+                            \item \textbf{Differentiation through contact problem}
+                        \end{itemize}
+                    \end{column}
+
+                    \begin{column}{0.3\textwidth}
+                        \textbf{Analytical}
+                        \begin{itemize}
+                            \item Only an approximation
+                            \item Doesn't fully capture real-world phenomena
+                        \end{itemize}
+                    \end{column}
+                \end{columns}
             \end{block}
             
 

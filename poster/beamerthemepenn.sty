@@ -73,7 +73,8 @@ colframe=pennrd,boxrule=5pt,coltext=penndkbl}
   	
   	\begin{beamercolorbox}[dp=0.5ex,center,leftskip=-1em,colsep*=.75ex]{block title}%
     \usebeamerfont*{block title}%
-    {\vspace{-0.5ex}\phantom{Gg}\fontspec{Garamond Premier Pro}{\Large \insertblocktitle} }% phantom because of baseline problem
+    {\vspace{-0.5ex}\phantom{Gg}{\Large \insertblocktitle} }% phantom because of baseline problem
+    %{\vspace{-0.5ex}\phantom{Gg}\fontspec{Garamond Premier Pro}{\Large \insertblocktitle} }% phantom because of baseline problem
   \end{beamercolorbox}%
   
     \ifbeamercolorempty[bg]{block body}{\vskip-.25ex}{\vskip-.75ex}\vbox{}%
@@ -85,7 +86,8 @@ colframe=pennrd,boxrule=5pt,coltext=penndkbl}
 
 \setbeamertemplate{block begin}{
 \vskip2ex
-  \begin{tcolorbox}[title={ \vspace{2mm} \large \hspace{-2mm}\fontspec{Garamond Premier Pro} {\MakeUppercase \insertblocktitle} \vspace{2mm}},
+  \begin{tcolorbox}[title={ \vspace{2mm} \large \hspace{-2mm} {\MakeUppercase \insertblocktitle} \vspace{2mm}},
+  %\begin{tcolorbox}[title={ \vspace{2mm} \large \hspace{-2mm}\fontspec{Garamond Premier Pro} {\MakeUppercase \insertblocktitle} \vspace{2mm}},
 fuzzy shadow={0pt}{0pt}{-8pt}{2pt}{black!60!white},
 coltext=penndkbl,outer arc=5pt,arc=0pt]
 \vskip.75ex
@@ -111,7 +113,7 @@ coltext=penndkbl,outer arc=5pt,arc=0pt]
         \centering
         \rule{\textwidth}{4mm}
         %\vspace{2ex}
-        \justifying
+        %\justifying
         
         %\resizebox{\paperwidth}{!}{
         {\usebeamercolor{title in headline}{\color{fg} \fontsize{110}{120}\selectfont \textbf{\inserttitle }\\[1ex]}}
@@ -119,10 +121,10 @@ coltext=penndkbl,outer arc=5pt,arc=0pt]
         \vspace{-18ex}
         \centering
         %\raisebox{1ex}{\rule{0.36135\textwidth}{4mm}}
-        \raisebox{1ex}{\rule{0.2934\textwidth}{4mm}}
+        \raisebox{1ex}{\rule{0.224\textwidth}{4mm}}
         \usebeamercolor{author in headline}{\color{fg}\huge{\, \insertauthor \,}}
         %\raisebox{1ex}{ \rule{0.36135\textwidth}{4mm} }\\[1ex]
-        \raisebox{1ex}{ \rule{0.2934\textwidth}{4mm} }\\[1ex]
+        \raisebox{1ex}{ \rule{0.224\textwidth}{4mm} }\\[1ex]
         \usebeamercolor{institute in headline}{\color{fg}\Large{\insertinstitute}\\[1ex]}  
       \end{column}
             \begin{column}{.01\paperwidth}
