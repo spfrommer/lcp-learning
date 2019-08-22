@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2018)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: /Users/mathewhalm/Research/Posters/DCIST_Kickoff/.texpadtmp/poster.aux
+The style file: plain.bst
+Database file #1: ../library.bib
+Repeated entry---line 4658 of file ../library.bib
+ : @book{Routh91
+ :              ,
+I'm skipping whatever remains of this entry
+You've used 2 entries,
+            2118 wiz_defined-function locations,
+            513 strings with 4432 characters,
+and the built_in function-call counts, 552 in all, are:
+= -- 53
+> -- 14
+< -- 0
++ -- 6
+- -- 4
+* -- 36
+:= -- 98
+add.period$ -- 6
+call.type$ -- 2
+change.case$ -- 7
+chr.to.int$ -- 0
+cite$ -- 2
+duplicate$ -- 23
+empty$ -- 52
+format.name$ -- 4
+if$ -- 112
+int.to.chr$ -- 0
+int.to.str$ -- 2
+missing$ -- 3
+newline$ -- 13
+num.names$ -- 4
+pop$ -- 10
+preamble$ -- 1
+purify$ -- 6
+quote$ -- 0
+skip$ -- 13
+stack$ -- 0
+substring$ -- 41
+swap$ -- 2
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 6
+warning$ -- 0
+while$ -- 6
+width$ -- 3
+write$ -- 23
+(There was 1 error message)

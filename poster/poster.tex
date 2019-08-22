@@ -10,7 +10,6 @@
 \boldmath
 \usepackage[orientation=portrait,size=b1,scale=1.25,debug]{beamerposter}
 
-
 \usepackage{rigidmath}
 \usepackage{mathspec}
 %\setmainfont{Times New Roman}
@@ -44,6 +43,9 @@
 
 \newcolumntype{Z}{>{\centering\arraybackslash}X} % centered tabularx columns
 %\newcommand{\pphantom}{\textcolor{ta3aluminium}} % phantom introduces a vertical space in p formatted table columns??!!
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
 
 \listfiles
 
@@ -95,7 +97,7 @@
             \begin{block}{Prior Work}
                 \begin{columns}[t]
                     \begin{column}{0.3\textwidth}
-                        \textbf{Learned}
+                        \textbf{Purely learned}
                         \begin{itemize}
                             \item Often in context of policy learning
                             \item Slow and data innefficient
@@ -130,30 +132,41 @@
             
 
             \begin{block}{Method}
-            	\begin{figure}
-	              	\includegraphics[width=0.7\textwidth]{VelocityConnection}
-	              \end{figure}
-              \begin{itemize}
-              \item Finds change in velocity and impulses via Newton's second law:
-	                  $$\Mass (\Velocity_+ - \Velocity_-) = \J^T \Impulse$$
-	              \item Extension of Routh's 1891 model to multiple contacts \cite{Routh91}
-	              
-	              \item $\Velocity_+$ and $\Impulse$ determined \textit{incrementally}:
-	              
-	              \begin{enumerate}
-	              	\item Increase normal impulses with slopes $\NormalForce[i]$ such that
-	              		$$\sum_i \NormalForce[i] = 1$$
-	              	\item Increment each friction impulse via Coulomb friction:
-	             		$$\TwoNorm{\FrictionForce[i]} \leq \FrictionCoeff[i]\Norm{\NormalForce[i]},\qquad \FrictionForce[i] \in \arg \min_{\FrictionForce[i]} \FrictionForce[i]^T\Velocity_i$$
-	              	\item Terminate when $\Velocity = \Velocity_- + \Mass^{-1}\J^T \Lambda$ no longer penetrates
-	              \end{enumerate}
-	              \item
-	              Formulation as a \textit{differential inclusion}
-	              $$\frac{\mathrm{d}}{\mathrm{d}s} \Velocity(s) \in D(\Velocity(s))$$
-              \end{itemize}
+              \begin{enumerate}
+                  \item Formulate base contact model as fusion of Drumwright \cite{Drumwrighta} and MuJoCo \cite{Todorov}
+                      \textbf{Phase 1:} Solver for normal forces with no friction:
+                      \begin{align*}
+                          \argmin _{\NormalForce \geq \vect 0} \quad &\NormalForce^T \Jn \Mass^{-1} \Jn ^T \NormalForce + \Jn f \Force \\
+                                                            & \Jn \Mass^{-1} \Jn ^T \NormalForce \Delta t + (\Jn f) \Gap \geq 0
+                      \end{align*}
+
+                      \textbf{Phase 2:} Compute $\kappa = e^T \NormalForce$ from phase 1. Then solve frictional contact:
+                      \begin{align*}
+                          \argmin _{\Force} \quad \Force^T \J \Mass^{-1} \J ^T \Force + \J f \NormalForce + & \NormalForce^T diag( exp(\Gap) ) \NormalForce \\
+                                               \J \Mass^{-1} \J ^T \Force \Delta t + (\J f) \Gap & \geq 0 \\
+                                                                  \NormalForce &\geq 0 \\
+                                                                  e^T \NormalForce &\leq \kappa \\
+                                                                  \FrictionForce &\leq \mu \NormalForce
+                      \end{align*}
+                  \item Penalize deviations from measured data in subproblem
+                      \begin{itemize}
+                          \item Incorporate $L_2$ state penalty in contact model objectives
+                          \item Introduces \textbf{tradeoff} between satisfying model and matching experimental observations to avoid nonexistant parameter gradients
+                      \end{itemize}
+                  \item Optimize model parameter set with respect to summed error over all data points
+                      \begin{align*}
+                          \argmin _{\theta} \quad & \sum _i \left(Dynamics(\Configuration _i, \Input _i, \Force) - \bar \Configuration _i \right)^2 \\
+                          s.t. \quad &\Force = Sol (\Configuration _i, \Input _i)
+                      \end{align*}
+              \end{enumerate}
+                
+              \begin{footnotesize}
+                  \centering
+              $\Configuration$ -- configuration | $\Input$ control input | $\NormalForce$ -- normal forces | $\FrictionForce$ -- frictional forces | $\Jn$ -- normal contact Jacobian | $\Jt$ -- tangential contact Jacobian | $\vect f$ -- no contact dynamics | $\Gap$ -- gap function | $\mu$ -- Coulomb friction coefficient | $\Mass$ - inertia matrix
+              \end{footnotesize}
             \end{block}
             \footnotesize{\color{pennbl}
-				\bibliography{library}
+				\bibliography{library2}
 				\bibliographystyle{plain}}
            \begin{columns}[c]
 				\begin{column}{.25\textwidth}
@@ -212,9 +225,9 @@
                \textbf{\color{pennrd} Antagonistic scenarios may prevent finding valid post-impact state:}
                \end{center}
               \begin{figure}
-              	\includegraphics[width=0.3\textwidth]{Corner}
+              	\includegraphics[width=0.3\textwidth]{hard_constraints}
               	\hspace{0.125\textwidth}
-              	\includegraphics[width=0.3\textwidth]{Bucket}
+              	\includegraphics[width=0.3\textwidth]{soft_constraints}
               \end{figure}
               \begin{tcolorbox}[colback=pennyw,
 colframe=penndyw,boxrule=5pt,coltext=pennbl,outer arc=5pt,arc=0pt]
@@ -292,17 +305,17 @@ colframe=penndyw,boxrule=5pt,coltext=pennbl,outer arc=5pt,arc=0pt]
     % end the column
   \end{columns}
   
-%  \begin{center} 
-%  \begin{minipage}{.85 \textwidth}
-%  \begin{block}{References}
-%  {
-%  \scriptsize
-%\bibliography{library}
+  %\begin{center} 
+  %\begin{minipage}{.85 \textwidth}
+  %\begin{block}{References}
+  %{
+  %\scriptsize
+%\bibliography{library2}
 %\bibliographystyle{plain}
 %}
-%  \end{block}   
-%    \end{minipage}   
-%   \end{center}
+  %\end{block}   
+    %\end{minipage}   
+   %\end{center}
    
 \end{frame}
 \end{document}

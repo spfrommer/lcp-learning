@@ -13,13 +13,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 % Environment
-%\newtheorem{theorem}{Theorem}
-%\newtheorem{corollary}[theorem]{Corollary}
-%\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{assumption}{Assumption}
-\newtheorem{proposition}{Proposition}
-\newtheorem{remark}{Remark}
-%\newtheorem{definition}{Definition}
 
 % Equation Construction
 \newcommand{\Brackets}[1]{\left[ #1 \right]}
@@ -73,6 +66,8 @@
 \newcommand{\InnerProduct}[2]{\langle#1,#2\rangle}
 \newcommand{\Direction}[1]{\widehat{#1}}
 \newcommand{\Unit}{\mathrm{Unit}}
+\newcommand{\Dimension}{\mathrm{dim}}
+
 
 
 % Real Analysis
@@ -121,8 +116,18 @@
 
 % Elementary Constants
 \newcommand{\ZeroVector}{\vect{0}}
+\newcommand{\OneVector}{\vect{e}}
+\newcommand{\OneVectorMatrix}{\vect{E}}
 
-
+% Linear Complementarity Problems
+\newcommand{\LCPMatrix}{\vect{M}}
+\newcommand{\LCPVector}{\vect{w}}
+\newcommand{\MPLCPVectorMap}{\vect{W}}
+\newcommand{\LCPVariables}[0]{\vect{z}}
+\newcommand{\LCP}[2]{\mathrm{LCP}(#1, #2)}
+\newcommand{\LCPSolutionSet}[2]{\mathrm{SOL}(#1, #2)}
+\newcommand{\LCPSet}[2]{\LCPSol{#1}{#2}}
+\newcommand{\Complementary}[2]{\ZeroVector \leq #1 \perp #2 \geq \ZeroVector}
 
 
 
@@ -136,21 +141,48 @@
 \newcommand{\States}{n}
 \newcommand{\Contacts}{m}
 \newcommand{\FrictionalContacts}{k}
+\newcommand{\UnactuatedCoordinates}{{n_{\Unactuated}}}
+\newcommand{\ActuatedCoordinates}{{n_{\Actuated}}}
+\newcommand{\FrictionBases}{{b}}
+
+% Manipulation Identifiers
+\newcommand{\Unactuated}{u}
+\newcommand{\Actuated}{a}
+\newcommand{\TwoD}{{2D}}
+\newcommand{\ThreeD}{{3D}}
 
 % Equation Components
 \newcommand{\Configuration}{\vect{q}}
 \newcommand{\Velocity}{\vect{v}}
+\newcommand{\GeneralizedVelocity}{\vect{V}}
+\newcommand{\GeneralizedVelocityJacobian}{\vect{\Gamma}}
 \newcommand{\Acceleration}{\dot{\vect{v}}}
 \newcommand{\State}{\vect{x}}
+
+\newcommand{\Timestep}{h}
+
 \newcommand{\Input}{\vect{u}}
+\newcommand{\Displacement}{\vect{U}}
+\newcommand{\Torque}{\vect{\tau}}
+\newcommand{\Feedback}{\vect{K}}
+\newcommand{\FeedbackScaling}{c}
+\newcommand{\Damping}{\vect{B}}
+
+
 \newcommand{\Mass}{\vect{M}}
 \newcommand{\Coriolis}{\vect{C}}
-\newcommand{\Gravtity}{\vect{G}}
+\newcommand{\Gravity}{\vect{G}}
 \newcommand{\CoriolisAndGravity}{\vect{C}}
 \newcommand{\KineticEnergy}{K}
+\newcommand{\Gap}{\vect{\phi}}
+
+\newcommand{\Centroid}[1][]{\ve{p}_{#1}}
+
+
+\newcommand{\LimitSurfaceHessian}{\vect{A}}
+
 \DeclareDocumentCommand\FrictionCoeff{o}{\vect{\mu}\IfNoValueTF{#1}{}{_{#1}}}
 \DeclareDocumentCommand\NetForce{o}{F_{\IfNoValueTF{#1}{}{#1}}}
-
 
 \DeclareDocumentCommand\J{o}{\vect{J}_{\IfNoValueTF{#1}{}{#1}}}
 \DeclareDocumentCommand\Jn{o}{\vect{J}_{n\IfNoValueTF{#1}{}{,#1}}}
@@ -159,16 +191,22 @@
 \DeclareDocumentCommand\Force{o}{\vect{\lambda}_{\IfNoValueTF{#1}{}{#1}}}
 \DeclareDocumentCommand\NormalForce{o}{\vect{\lambda}_{n\IfNoValueTF{#1}{}{,#1}}}
 \DeclareDocumentCommand\FrictionForce{o}{\vect{\lambda}_{t\IfNoValueTF{#1}{}{,#1}}}
+\DeclareDocumentCommand\FrictionBasis{o}{\vect{d}_{\IfNoValueTF{#1}{}{#1}}}
 
 \DeclareDocumentCommand\Impulse{o}{\vect{\Lambda}_{\IfNoValueTF{#1}{}{#1}}}
 \DeclareDocumentCommand\NormalImpulse{o}{\vect{\Lambda}_{n\IfNoValueTF{#1}{}{,#1}}}
 \DeclareDocumentCommand\FrictionImpulse{o}{\vect{\Lambda}_{t\IfNoValueTF{#1}{}{,#1}}}
 
+\DeclareDocumentCommand\ForceSet{o}{\mathcal{F}_{\IfNoValueTF{#1}{}{#1}}}
+\DeclareDocumentCommand\SlackVelocity{o}{\vect{\gamma}_{\IfNoValueTF{#1}{}{#1}}}
+\DeclareDocumentCommand\SlackDisplacement{o}{\vect{\Gamma}_{\IfNoValueTF{#1}{}{#1}}}
 
 % Constituent Functions
 \DeclareDocumentCommand\DerivativeMap{o}{D\IfNoValueTF{#1}{}{_{#1}}}
 \DeclareDocumentCommand\DissipationRate{o}{\alpha\IfNoValueTF{#1}{}{_{#1}}}
 \DeclareDocumentCommand\FrictionCone{o}{\mathrm{FC}\IfNoValueTF{#1}{}{_{#1}}}
+\DeclareDocumentCommand\InternalForces{o}{\mathcal{IF}\IfNoValueTF{#1}{}{_{#1}}}
+\newcommand{\LimitSurface}{H}
 
 % State Space Regions
 \newcommand{\VelocitySpace}{\Real^{\States}}
@@ -177,7 +215,8 @@
 \newcommand{\FrictionContactSpace}{\Real^{2\Contacts}}
 \DeclareDocumentCommand\ActiveSet{o}{\mathcal{P}\IfNoValueTF{#1}{}{_{#1}}}
 \DeclareDocumentCommand\InactiveSet{o}{\mathcal{A}\IfNoValueTF{#1}{}{_{#1}}}
-
+\DeclareDocumentCommand\VelocitySet{o}{\mathcal{V}_{\IfNoValueTF{#1}{}{#1}}}
+\newcommand{\InputSet}{\mathcal U}
 
 % System Classes
 \newcommand{\ContactSystems}{\mathcal{C}}

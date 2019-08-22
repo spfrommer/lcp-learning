@@ -1,59 +1,51 @@
-This is BibTeX, Version 0.99d (TeX Live 2016/Debian)
+This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
 Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: poster.aux
 The style file: plain.bst
-Database file #1: library.bib
-Repeated entry---line 4071 of file library.bib
- : @inproceedings{Posa17
- :                      ,
-I'm skipping whatever remains of this entry
-Repeated entry---line 4227 of file library.bib
- : @inproceedings{Posa13a
- :                       ,
-I'm skipping whatever remains of this entry
-Repeated entry---line 4337 of file library.bib
- : @article{Posa14
- :                ,
-I'm skipping whatever remains of this entry
-You've used 3 entries,
+Database file #1: library2.bib
+Warning--empty institution in Drumwrighta
+Warning--empty year in Drumwrighta
+Warning--empty institution in Todorov
+Warning--empty year in Todorov
+You've used 2 entries,
             2118 wiz_defined-function locations,
-            519 strings with 4581 characters,
-and the built_in function-call counts, 1167 in all, are:
-= -- 113
-> -- 54
-< -- 1
-+ -- 21
-- -- 18
-* -- 85
-:= -- 190
-add.period$ -- 10
-call.type$ -- 3
-change.case$ -- 18
+            505 strings with 4280 characters,
+and the built_in function-call counts, 519 in all, are:
+= -- 46
+> -- 31
+< -- 0
++ -- 12
+- -- 10
+* -- 37
+:= -- 103
+add.period$ -- 6
+call.type$ -- 2
+change.case$ -- 13
 chr.to.int$ -- 0
-cite$ -- 3
-duplicate$ -- 46
-empty$ -- 96
-format.name$ -- 18
-if$ -- 248
+cite$ -- 6
+duplicate$ -- 16
+empty$ -- 31
+format.name$ -- 10
+if$ -- 94
 int.to.chr$ -- 0
-int.to.str$ -- 3
-missing$ -- 3
-newline$ -- 18
-num.names$ -- 6
-pop$ -- 22
+int.to.str$ -- 2
+missing$ -- 0
+newline$ -- 13
+num.names$ -- 4
+pop$ -- 15
 preamble$ -- 1
-purify$ -- 15
+purify$ -- 9
 quote$ -- 0
-skip$ -- 30
+skip$ -- 9
 stack$ -- 0
-substring$ -- 70
-swap$ -- 12
-text.length$ -- 1
+substring$ -- 10
+swap$ -- 0
+text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 12
-warning$ -- 0
-while$ -- 11
-width$ -- 4
-write$ -- 35
-(There were 3 error messages)
+type$ -- 8
+warning$ -- 4
+while$ -- 4
+width$ -- 3
+write$ -- 20
+(There were 4 warnings)

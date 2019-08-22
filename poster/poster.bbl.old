@@ -1,0 +1,23 @@
+\begin{thebibliography}{1}
+
+\bibitem{Posa17}
+Michael Posa, Twan Koolen, and Russ Tedrake.
+\newblock {Balancing and Step Recovery Capturability via Sums-of-Squares
+  Optimization}.
+\newblock In {\em Robotics: Science and Systems}, 2017.
+
+\bibitem{Posa13a}
+Michael Posa, Mark Tobenkin, and Russ Tedrake.
+\newblock {Lyapunov Analysis of Rigid Body Systems with Impacts and Friction
+  via Sums-of-Squares}.
+\newblock In {\em Proceedings of the 16th International Conference on Hybrid
+  Systems: Computation and Control (HSCC 2013)}, pages 63--72. ACM, apr 2013.
+
+\bibitem{Posa14}
+Michael Posa, Mark Tobenkin, and Russ Tedrake.
+\newblock {Stability analysis and control of rigid-body systems with impacts
+  and friction}.
+\newblock {\em IEEE Transactions on Automatic Control (TAC)}, 61(6):1423--1437,
+  jun 2016.
+
+\end{thebibliography}

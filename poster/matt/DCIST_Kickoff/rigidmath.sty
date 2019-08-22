@@ -1,0 +1,187 @@
+\RequirePackage{xparse}
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{bm}
+\RequirePackage{ifmtarg}
+\RequirePackage{amsthm}
+\RequirePackage{mathtools}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%                      %
+% Generic Math Symbols %
+%                      %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Environment
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{corollary}[theorem]{Corollary}
+%\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+%\newtheorem{definition}{Definition}
+
+% Equation Construction
+\newcommand{\Brackets}[1]{\left[ #1 \right]}
+\newcommand{\Braces}[1]{\left\{ #1 \right\}}
+\newcommand{\Parentheses}[1]{\left( #1 \right)}
+
+
+% Number Theory
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Integer}{\mathbb{Z}}
+\newcommand{\Natural}{\mathbb{N}}
+\newcommand{\Rational}{\mathbb{Q}}
+
+
+% Set Theory
+\newcommand{\PowerSet}[1]{\mathbb{P}\Parentheses{#1}}
+\newcommand{\Complement}[1]{{#1}^c}
+\newcommand{\Else}{\mathrm{else}}
+\newcommand{\Otherwise}{\mathrm{otherwise}}
+\newcommand{\If}{\mathrm{if }}
+
+% Topology
+\newcommand{\Interior}{\mathrm{int}}
+\newcommand{\Closure}{\mathrm{cl}}
+\newcommand{\Boundary}{\partial}
+
+\newcommand{\Norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\TwoNorm}[1]{\Norm{#1}_2}
+\DeclareDocumentCommand\Ball{o}{B\IfNoValueTF{#1}{}{_{#1}}}
+
+% Convex Analysis
+\newcommand{\Hull}{\mathrm{co}}
+
+% Linear Algebra and Matrix Theory
+\newcommand{\vect}[1]{\bm{#1}}
+\newcommand{\NullSpace}[1]{\mathrm{Null}\Parentheses{#1}}
+\newcommand{\RangeSpace}[1]{\mathrm{Range}\Parentheses{#1}}
+\newcommand{\SPD}[1][]{\mathcal{S}_{#1}}
+\newcommand{\RepeatedDiagonal}[2][0]{\begin{bmatrix}
+#2 & #1 & \cdots \\
+#1 & #2 & \\
+\vdots & & \ddots
+\end{bmatrix}}
+\newcommand{\SequentialDiagonal}[2][0]{\begin{bmatrix}
+{#2}_1 & #1 & \cdots \\
+#1 & {#2}_2 & \\
+\vdots & & \ddots
+\end{bmatrix}}
+\newcommand{\Identity}[0]{\vect{I}}
+\DeclareDocumentCommand\Element{o}{\vect{e}_{\IfNoValueTF{#1}{}{_{#1}}}}
+\newcommand{\InnerProduct}[2]{\langle#1,#2\rangle}
+\newcommand{\Direction}[1]{\widehat{#1}}
+\newcommand{\Unit}{\mathrm{Unit}}
+
+
+% Real Analysis
+\newcommand{\Domain}{\Omega}
+\newcommand{\Differential}{\mathrm{d}}
+\newcommand{\Dt}{{\Differential t}}
+\newcommand{\Sequence}[3][\Natural]{\left( {#2}_{#3} \right)_{#3\in#1}}
+\newcommand{\PartialDiff}[2]{\frac{{\partial}#1 }{{\partial}#2}}
+\newcommand{\VectorPartial}[2]{\frac{\ve{\partial}#1 }{\ve{\partial}#2}}
+\newcommand{\TotalDiff}[2]{\frac{{\Differential}#1 }{{\Differential}#2}}
+\newcommand{\VectorTotal}[2]{\frac{{\vect{\Differential}}#1 }{{\Differential}#2}}
+\newcommand{\TimeDiff}[2]{\frac{{\Differential}#1 }{{\Dt}}}
+
+
+% Functional Analysis
+\DeclareDocumentCommand\StrongConvergence{}{\to}
+\DeclareDocumentCommand\WeakConvergence{}{\rightharpoonup}
+\DeclareDocumentCommand\SpecifiedConvergence{m}{\xrightarrow{#1}}
+\DeclareDocumentCommand\SpecifiedWeakConvergence{m}{\xrightharpoonup{#1}}
+
+\DeclareDocumentCommand\AlmostConvergence{}{\SpecifiedConvergence{a.e.}}
+\DeclareDocumentCommand\UniformConvergence{}{\SpecifiedConvergence{u}}
+
+\DeclareDocumentCommand\LpSpace{m o}{\mathcal{L}_{#1}\IfNoValueTF{#2}{}{\Parentheses{#2}}}
+\DeclareDocumentCommand\SobolevSpace{m o}{\mathcal{H}_{#1}\IfNoValueTF{#2}{}{\Parentheses{#2}}}
+
+\DeclareDocumentCommand\LpNorm{m m o}{\Norm{#1}_{\LpSpace{#2}[#3]}}
+\DeclareDocumentCommand\SobolevNorm{m m o}{\Norm{#1}_{\SobolevSpace{#2}[#3]}}
+
+\DeclareDocumentCommand\LpInnerProduct{m m o}{\InnerProduct{#1}{#2}_{\LpSpace{2}[#3]}}
+\DeclareDocumentCommand\SobolevInnerProduct{m m o}{\InnerProduct{#1}{#2}_{\SobolevSpace{1}[#3]}}
+
+\DeclareDocumentCommand\LpConvergence{m o}{\SpecifiedConvergence{\LpSpace{#1}[#2]}}
+\DeclareDocumentCommand\SobolevConvergence{m o}{\SpecifiedConvergence{\SobolevSpace{#1}[#2]}}
+\DeclareDocumentCommand\LpWeakConvergence{m o}{\SpecifiedWeakConvergence{\LpSpace{#1}[#2]}}
+\DeclareDocumentCommand\SobolevWeakConvergence{m o}{\SpecifiedWeakConvergence{\SobolevSpace{#1}[#2]}}
+
+\DeclareDocumentCommand\AbsolutelyContinuous{o o}{AC\IfNoValueTF{#1}{}{_{#1}}\IfNoValueTF{#2}{}{\Parentheses{#2}}}
+\DeclareDocumentCommand\BoundedVariation{o o}{BV\IfNoValueTF{#1}{}{_{#1}}\IfNoValueTF{#2}{}{\Parentheses{#2}}}
+
+
+% Dynamics
+\DeclareDocumentCommand\SolutionSet{m o}{\mathrm{SOL}_{#1}\Parentheses{#2}}
+\DeclareDocumentCommand\IVP{m m m}{\mathrm{IVP}_{#1}\Parentheses{#2,#3}}
+
+
+% Elementary Constants
+\newcommand{\ZeroVector}{\vect{0}}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                             %
+% Rigid Body Dynamics Symbols %
+%                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Dimensions
+\newcommand{\States}{n}
+\newcommand{\Contacts}{m}
+\newcommand{\FrictionalContacts}{k}
+
+% Equation Components
+\newcommand{\Configuration}{\vect{q}}
+\newcommand{\Velocity}{\vect{v}}
+\newcommand{\Acceleration}{\dot{\vect{v}}}
+\newcommand{\State}{\vect{x}}
+\newcommand{\Input}{\vect{u}}
+\newcommand{\Mass}{\vect{M}}
+\newcommand{\Coriolis}{\vect{C}}
+\newcommand{\Gravtity}{\vect{G}}
+\newcommand{\CoriolisAndGravity}{\vect{C}}
+\newcommand{\KineticEnergy}{K}
+\DeclareDocumentCommand\FrictionCoeff{o}{\vect{\mu}\IfNoValueTF{#1}{}{_{#1}}}
+\DeclareDocumentCommand\NetForce{o}{F_{\IfNoValueTF{#1}{}{#1}}}
+
+
+\DeclareDocumentCommand\J{o}{\vect{J}_{\IfNoValueTF{#1}{}{#1}}}
+\DeclareDocumentCommand\Jn{o}{\vect{J}_{n\IfNoValueTF{#1}{}{,#1}}}
+\DeclareDocumentCommand\Jt{o}{\vect{J}_{t\IfNoValueTF{#1}{}{,#1}}}
+
+\DeclareDocumentCommand\Force{o}{\vect{\lambda}_{\IfNoValueTF{#1}{}{#1}}}
+\DeclareDocumentCommand\NormalForce{o}{\vect{\lambda}_{n\IfNoValueTF{#1}{}{,#1}}}
+\DeclareDocumentCommand\FrictionForce{o}{\vect{\lambda}_{t\IfNoValueTF{#1}{}{,#1}}}
+
+\DeclareDocumentCommand\Impulse{o}{\vect{\Lambda}_{\IfNoValueTF{#1}{}{#1}}}
+\DeclareDocumentCommand\NormalImpulse{o}{\vect{\Lambda}_{n\IfNoValueTF{#1}{}{,#1}}}
+\DeclareDocumentCommand\FrictionImpulse{o}{\vect{\Lambda}_{t\IfNoValueTF{#1}{}{,#1}}}
+
+
+% Constituent Functions
+\DeclareDocumentCommand\DerivativeMap{o}{D\IfNoValueTF{#1}{}{_{#1}}}
+\DeclareDocumentCommand\DissipationRate{o}{\alpha\IfNoValueTF{#1}{}{_{#1}}}
+\DeclareDocumentCommand\FrictionCone{o}{\mathrm{FC}\IfNoValueTF{#1}{}{_{#1}}}
+
+% State Space Regions
+\newcommand{\VelocitySpace}{\Real^{\States}}
+\newcommand{\ContactSpace}{\Real^{3\Contacts}}
+\newcommand{\NormalContactSpace}{\Real^{\Contacts}}
+\newcommand{\FrictionContactSpace}{\Real^{2\Contacts}}
+\DeclareDocumentCommand\ActiveSet{o}{\mathcal{P}\IfNoValueTF{#1}{}{_{#1}}}
+\DeclareDocumentCommand\InactiveSet{o}{\mathcal{A}\IfNoValueTF{#1}{}{_{#1}}}
+
+
+% System Classes
+\newcommand{\ContactSystems}{\mathcal{C}}
+\newcommand{\DissipativeContactSystems}{\mathcal{D}}
+\newcommand{\SizedContactSystems}[2]{\mathcal{C}_{\Parentheses{#1,#2}}}
+\newcommand{\NondegenerateContactSystems}{\mathcal{N}}
+\newcommand{\MinimalContactSystems}[2]{\mathcal{F}_{\Parentheses{#1,#2}}}
