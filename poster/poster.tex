@@ -35,6 +35,12 @@
 
 \usepackage{array,booktabs,tabularx}
 
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{patterns,snakes}
+\usetikzlibrary{calc}
+
 
 
 
@@ -56,8 +62,8 @@
 %\title{\fontspec{Garamond Premier Pro} {\noindent  \,MODELING AND ANALYSIS OF NON-UNIQUE\, \linebreak \mbox{\,BEHAVIORS} IN MULTIPLE FRICTIONAL IMPACTS\, \linebreak} }
 %\title{{\noindent  \,MODELING AND ANALYSIS OF NON-UNIQUE\, \linebreak \mbox{\,BEHAVIORS} IN MULTIPLE FRICTIONAL IMPACTS\, \linebreak} }
 \title{{\noindent  \,SAMPLE-EFFICIENT LEARNING OF \, \linebreak \,RIGID BODY DYNAMICS\, \linebreak} }
-\author{Samuel Pfrommer, Mathew Halm, Michael Posa}
-\institute[University of Pennsylvania]{DAIR Laboratory --- GRASP Laboratory --- University of Pennsylvania}
+\author{Samuel Pfrommer (CIS 2021), Mathew Halm (MEAM), Michael Posa (MEAM)}
+\institute[University of Pennsylvania]{PURM --- DAIR Laboratory --- University of Pennsylvania}
 \date{Feb. 12th, 2018}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,11 +93,22 @@
                         \item Frictional contact is fundamental to robot manipulation, but difficult to model
                             \begin{itemize}
                                 \item Sudden changes in dynamics when making/breaking contact 
-                                \item Inconsistencies with Coulomb friction (Painlev\'{e} paradox)
-                                \item Many simultaneous contacts
                                 \item Stick/slip transitions
+                                \item Large regions of zero state gradients w.r.t parameters
                             \end{itemize}
                     \end{itemize}
+
+                \begin{center}
+                    \textbf{How can we effectively learn dynamics over a stiff class of models?}
+                \end{center}
+              \end{block}
+
+              \begin{block}{Model requirements}
+                \begin{enumerate}
+                    \item True dynamics lies within class of learnable models and is optimal
+                    \item Stiffness of underlying model does not directly determine gradients 
+                    \item Non-zero gradients exist for a large region of parameter space
+                \end{enumerate}
               \end{block}
                       
             \begin{block}{Prior Work}
@@ -150,41 +167,44 @@
                       \end{align*}
                   \item Penalize deviations from measured data in subproblem
                       \begin{itemize}
-                          \item Incorporate $L_2$ state penalty in contact model objectives
-                          \item Introduces \textbf{tradeoff} between satisfying model and matching experimental observations to avoid nonexistant parameter gradients
+                          \item Incorporate $L_2$ \textbf{deviation penalty} in contact model objectives
+                          \item \textbf{Soften} hard constrants in subproblems
+                          \item Introduces a \textbf{tradeoff} between satisfying model and matching experimental observations to avoid nonexistant parameter gradients
                       \end{itemize}
-                  \item Optimize model parameter set with respect to summed error over all data points
+                  \item Optimize model parameter set with respect to summed error over all data points:
                       \begin{align*}
                           \argmin _{\theta} \quad & \sum _i \left(Dynamics(\Configuration _i, \Input _i, \Force) - \bar \Configuration _i \right)^2 \\
                           s.t. \quad &\Force = Sol (\Configuration _i, \Input _i)
                       \end{align*}
+                      Where $Sol$ refers to the forces produced by the above subroutine. This outer optimization is performed with gradient descent, where gradients through the QP subproblems are supplied by Amos et. al. \cite{Amos2017}.
               \end{enumerate}
                 
               \begin{footnotesize}
-                  \centering
-              $\Configuration$ -- configuration | $\Input$ control input | $\NormalForce$ -- normal forces | $\FrictionForce$ -- frictional forces | $\Jn$ -- normal contact Jacobian | $\Jt$ -- tangential contact Jacobian | $\vect f$ -- no contact dynamics | $\Gap$ -- gap function | $\mu$ -- Coulomb friction coefficient | $\Mass$ - inertia matrix
+                  \begin{center}
+              $\Configuration$ -- configuration | $\Input$ -- input | $\NormalForce$ -- normal forces | $\FrictionForce$ -- frictional forces | $\Jn$ -- normal contact Jacobian | $\Jt$ -- tangential contact Jacobian | $\vect f$ -- no contact dynamics | $\Gap$ -- gap function | $\mu$ -- Coulomb friction coefficient | $\Mass$ - inertia matrix
+                  \end{center}
               \end{footnotesize}
             \end{block}
             \footnotesize{\color{pennbl}
 				\bibliography{library2}
 				\bibliographystyle{plain}}
-           \begin{columns}[c]
-				\begin{column}{.25\textwidth}
+           %\begin{columns}[c]
+				%\begin{column}{.25\textwidth}
 				
-				\begin{figure}
+				%\begin{figure}
 				
-					\includegraphics[width=\textwidth]{NSFLogo}
-				\end{figure}
-				\end{column}
-				\begin{column}{.64\textwidth}
-				\centering
-				\begin{figure}
-				\centering
-					\includegraphics[width=\textwidth]{grasp_logo1_blue}
-				\end{figure}
+					%\includegraphics[width=\textwidth]{NSFLogo}
+				%\end{figure}
+				%\end{column}
+				%\begin{column}{.64\textwidth}
+				%\centering
+				%\begin{figure}
+				%\centering
+					%\includegraphics[width=\textwidth]{grasp_logo1_blue}
+				%\end{figure}
 
-				\end{column}
-				\end{columns}
+				%\end{column}
+				%\end{columns}
 				
 
     
@@ -209,89 +229,94 @@
             % Since all columns are the same length, it is all nice and tidy.  You have to get the height empirically
             % ---------------------------------------------------------%
             % fill each column with content
-             \begin{block}{Theoretical Results}
-             \begin{center}
-             	\textbf{Model is proven to be well behaved:}
-             \end{center}
-              \begin{itemize}
-              \item Dissipation of kinetic energy $\KineticEnergy(s)$, \textbf{but} no guaranteed rate $\TotalDiff{}{s}\KineticEnergy < - \varepsilon K$
-               $$\KineticEnergy (s + k) \leq \KineticEnergy (s),\, \forall k > 0$$
-              \item Homogeneity of impact map
-              	$$\Parentheses{\Velocity_- \to \Velocity_+} \implies \Parentheses{k\Velocity_- \to k\Velocity_+,\, \forall k \geq 0}$$
-              \item \textbf{Existence of solutions} to every initial value problem
-              \end{itemize}
+             \begin{block}{Application: 1d frictional block}
+             \begin{columns}[c]
+				\begin{column}{.6\hsize}
+				\justify
+                A simple example of a sliding point-mass with stick-slip friction. If the initial estimate for the friction coefficient $\mu$ is much higher than the actual $\mu$, local changes of $\mu$ will be unable to reward the optimizer (block stays sticking no matter what). Introducing tradeoffs into the subproblem helps create gradients.
+				\end{column}
+				\begin{column}{.35\hsize}
+				\centering
+				\vspace{0ex}
+    \begin{figure}
+            \begin{tikzpicture}
+\tikzstyle{ground}=[fill,pattern=north west lines,draw=none,minimum width=5,minimum height=0.7]
+\node (wall1) [ground, minimum height=0.6cm, minimum width=5cm] {};
+\draw [thick] (wall1.north west) -- (wall1.north east);
+\node [draw,minimum width=2cm,minimum height=2cm, thick] (mass) at (0,1.4) {};
+\draw [ultra thick, ->] (mass.center) -- +(2.5cm,0cm)  node[right] {$u$};
+\draw [ultra thick, ->] (mass.center) -- +(0cm,-3.0cm)  node[right] {$mg$};
+\draw [ultra thick, ->] (mass.center) -- +(-1.5cm,0cm)  node[left] {$m g \mu$};
+\node [circle, fill=black, inner sep=0cm,minimum size=0.3cm] (b) at (mass) {};
+\draw [ultra thick, <->] ($(mass.center)+(-2cm,2cm)$) -- ($(mass.center)+(2cm,2cm)$)  node[right] {$v$};
+            \end{tikzpicture}
+    \end{figure}
+				\end{column}
+			 \end{columns}
               \vspace{1ex}
-              \begin{center}
-               \textbf{\color{pennrd} Antagonistic scenarios may prevent finding valid post-impact state:}
-               \end{center}
+             \begin{center}
+             	\textbf{Modification of subproblem produces learnable gradients}
+             \end{center}
               \begin{figure}
-              	\includegraphics[width=0.3\textwidth]{hard_constraints}
+              	\includegraphics[width=0.4\textwidth]{hard_constraints}
               	\hspace{0.125\textwidth}
-              	\includegraphics[width=0.3\textwidth]{soft_constraints}
+              	\includegraphics[width=0.4\textwidth]{soft_constraints}
               \end{figure}
-              \begin{tcolorbox}[colback=pennyw,
-colframe=penndyw,boxrule=5pt,coltext=pennbl,outer arc=5pt,arc=0pt]
-              \textbf{Theorem.} For non-jammed systems, impact terminates linearly in $\Norm{\Velocity(0)}$.	
-              \end{tcolorbox}     
             \end{block}
             
-             \begin{block}{Application: Rimless Wheel}
+             \begin{block}{Application: 2D polygon}
              \centering
              \begin{columns}[c]
-				\begin{column}{.47\hsize}
+				\begin{column}{.6\hsize}
 				\justify
-				Impact model not only gives each of the three first-principles results, but also returns every reasonable \mbox{intermediate} result.
+                A planar polygon tumbling on a static surface. The forward dynamics can be solved using a variety of different methods; for learning, we used the combined Drumwright / MuJoCo model on the left due to its convenient convex form. Optimization was performed using stochastic gradient descent.
 				\end{column}
-				\begin{column}{.47\hsize}
+				\begin{column}{.35\hsize}
 				\centering
 				\vspace{0ex}
-				\begin{figure}
-				\centering
-              	\includegraphics[width=0.8\textwidth]{rimless_example_2_4}
-              	\end{figure} 
+    \begin{figure}
+            \begin{tikzpicture}
+\tikzstyle{ground}=[fill,pattern=north west lines,draw=none,minimum width=2,minimum height=0.7]
+\node (wall1) [ground, minimum height=0.6cm, minimum width=3cm] {};
+\draw [thick] (wall1.north west) -- (wall1.north east);
+\node [] (mass) at (-0.2,1.6) {};
+
+\coordinate[] (A) at (0,0.4);
+\coordinate[] (B) at (1.5,2);
+\coordinate[] (C) at (-1,3);
+\coordinate[] (D) at (-1.5,0.8);
+\draw[thick] (A)--(B)--(C)--(D)--cycle;
+
+\draw [ultra thick, ->] (mass.center) -- +(2.5cm,0cm)  node[right] {$u$};
+\draw [ultra thick, ->] (A) -- +(0cm,-3.0cm)  node[right] {$\NormalForce$};
+\draw [ultra thick, ->] (A) -- +(-2.5cm,0cm)  node[left] {$\FrictionForce$};
+\node [circle, fill=black, inner sep=0cm,minimum size=0.3cm] (b) at (mass) {};
+            \end{tikzpicture}
+    \end{figure}
 				\end{column}
 				\end{columns}
-             \centering
+              \vspace{1ex}
+             \begin{center}
+             	\textbf{Simultaneous optimization of multiple parameters}
+             \end{center}
+              \begin{figure}
+              	\includegraphics[width=0.8\textwidth]{three_var_learn}
+              \end{figure}
              \end{block}
-             
-             \begin{block}{Application: Manipulation}
-             \centering
-             \begin{columns}[c]
-             
-				\begin{column}{.47\hsize}
-				\justify
-				Non-uniqueness emerges even without simultaneous impact. A block slid into a wall (right) will have sensitive behaviors due to propagation of shockwaves through the body.
-				\end{column}
-				\begin{column}{.47\hsize}
-				\centering
-				\vspace{0ex}
-				\begin{figure}
-				\centering
-              	\includegraphics[width=0.9\textwidth]{PushingFinal}
-              	\end{figure} 
-				\end{column}
-				\end{columns}
-				\begin{figure}
-					\includegraphics[width=0.4\textwidth]{pushing_example_1}
-					\hspace{0.06\textwidth}
-					\includegraphics[width=0.4\textwidth]{pushing_example_2}
-				\end{figure}
-            \end{block}
             
              \begin{block}{Summary}
              \textbf{Contributions}
               \begin{itemize}
-              \item Derivation of a simultaneous inelastic impact model
-              \item Proven characterization of model properties
-              \item Guarantees for existence of solutions and impact termination
+                  \item Convex time-stepping contact model that addresses weaknesses of MuJoCo and Drumwright
+                  \item Bilevel optimization formulation of contact dynamics learning
+                  \item Expanded regions of nonzero gradients
               \end{itemize}
               \vspace{1ex}
                \textbf{Ongoing Work}             
               \begin{itemize}
-              \item Modeling of elastic impacts
-              \item Embedding impact model into full dynamics
-              \item Time-stepping simulation through impact
-              \item Algorithms for approximating post-impact set
+                  \item Introducing learning of nonphysical quantities
+                  \item Experimenting with different normal force softening methods
+                  \item Testing with real Kuka arm
               \end{itemize}
             \end{block}
             

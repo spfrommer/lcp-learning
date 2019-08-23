@@ -1,14 +1,17 @@
 \begin{thebibliography}{1}
 
+\bibitem{Amos2017}
+Brandon Amos and J~{Zico Kolter}.
+\newblock {OptNet: Differentiable Optimization as a Layer in Neural Networks}.
+\newblock 2017.
+
 \bibitem{Drumwrighta}
 Evan Drumwright and Dylan~A Shell.
 \newblock {Modeling Contact Friction and Joint Friction in Dynamic Robotic
   Simulation using the Principle of Maximum Dissipation}.
-\newblock Technical report.
 
 \bibitem{Todorov}
 Emanuel Todorov, Tom Erez, and Yuval Tassa.
 \newblock {MuJoCo: A physics engine for model-based control}.
-\newblock Technical report.
 
 \end{thebibliography}
