@@ -4,7 +4,7 @@ from qpth.qp import QPFunction
 
 import pdb
 
-def get_fowards_function(soft_nonnegativity, soft_lambdas,
+def get_fowards_function(soft_nonnegativity, soft_lambdas, l1_softness,
         force_max_dissipation_qp, force_max_dissipation_ext):
 
     def forward(params, data):
@@ -52,18 +52,26 @@ def get_fowards_function(soft_nonnegativity, soft_lambdas,
         beta_zeros = torch.zeros(beta.shape)
         b = torch.cat((-2 * beta, 2 * beta, beta_zeros, beta_zeros, beta_zeros, 
                        beta_zeros, beta_zeros, beta_zeros, beta_zeros), 1).unsqueeze(2)
-        
-        inequality_slack_penalty = torch.tensor([0.0, 0, 0, 1, 1, 1, 0, 0, 0]).repeat(n, 1).unsqueeze(2)
-        lambdas_slack_penalty = torch.tensor([0.0, 0, 0, 0, 0, 0, 1, 1, 1]).repeat(n, 1).unsqueeze(2)
 
         a1 = 1
         a2 = 1
-        a3 = 50
-        a4 = 50
+        a3 = 20
+        a4 = 20
         a5 = 0.1
 
-        Q = 2 * a1 * A + 2 * a2 * Gpad
-        p = a1 * b + a2 * fpad + a3 * inequality_slack_penalty + a4 * lambdas_slack_penalty
+        if l1_softness:
+            inequality_slack_penalty = torch.tensor([0.0, 0, 0, 1, 1, 1, 0, 0, 0]).repeat(n, 1).unsqueeze(2)
+            lambdas_slack_penalty = torch.tensor([0.0, 0, 0, 0, 0, 0, 1, 1, 1]).repeat(n, 1).unsqueeze(2)
+
+            Q = 2 * a1 * A + 2 * a2 * Gpad  
+            p = a1 * b + a2 * fpad + a3 * inequality_slack_penalty + a4 * lambdas_slack_penalty
+        else:
+            inequality_slack_penalty = torch.diag(torch.tensor([0.0, 0, 0, 1, 1, 1, 0, 0, 0])).repeat(n, 1, 1)
+            lambdas_slack_penalty = torch.diag(torch.tensor([0.0, 0, 0, 0, 0, 0, 1, 1, 1])).repeat(n, 1, 1)
+
+            Q = 2 * a1 * A + 2 * a2 * Gpad + a3 * inequality_slack_penalty + a4 * lambdas_slack_penalty 
+            p = a1 * b + a2 * fpad
+
         
         # Constrain slacks (but not lambdas) to be >= 0
         R = torch.cat((torch.zeros(6, 3), -torch.eye(6)), 1).repeat(n, 1, 1)
